@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barnyard Auction</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5ef;--surface:#fff;--ink:#1d2b26;--muted:#5d6b64;--line:#d9dcd0;--board:#1d2b26;--board-ink:#f4f5ef;--ticket:#f2c230;--ribbon:#b5372b;--ok:#2f7a4b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141b18;--surface:#1d2723;--ink:#eef0e8;--muted:#9aa89f;--line:#33423b;--board:#0d1210;--ok:#5cc184;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141b18;--surface:#1d2723;--ink:#eef0e8;--muted:#9aa89f;--line:#33423b;--board:#0d1210;--ok:#5cc184;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Archivo,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:16px}
+header.board{background:var(--board);color:var(--board-ink);border-radius:14px;padding:20px;margin-bottom:16px}
+header.board h1{margin:0 0 4px;font-weight:800;font-size:1.7rem;letter-spacing:-.01em}
+header.board p{margin:0;color:#b9c4bd;font-size:.95rem}
+.tot{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.tot div{flex:1 1 120px;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 12px}
+.tot b{display:block;font-size:1.5rem;font-weight:800;color:var(--ticket)}
+.tot span{font-size:.85rem;color:#b9c4bd}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+select,input,button,textarea{font:inherit;color:var(--ink)}
+select,input{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0}
+button{border:0;border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;background:var(--ticket);color:#1d2b26}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+button.danger{background:transparent;color:var(--ribbon);padding:6px 8px}
+:focus-visible{outline:3px solid var(--ticket);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.panel h2{margin:0 0 12px;font-size:1.05rem}
+form.add{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+form.add .full{grid-column:1/-1}
+.lots{display:grid;gap:10px}
+.lot{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.num{min-width:48px;text-align:center;font-weight:800;font-size:1.25rem;background:var(--ticket);color:#1d2b26;border-radius:8px;padding:8px 6px}
+.lot.sold .num{background:var(--ok);color:#fff}
+.lot h3{margin:0;font-size:1rem}
+.lot small{color:var(--muted)}
+.sale{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.sale input{width:96px}
+.price{font-weight:800;font-size:1.15rem;color:var(--ok)}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.note{font-size:.85rem;color:var(--muted);margin-top:18px}
+@media (max-width:560px){.lot{grid-template-columns:auto 1fr}.sale{grid-column:1/-1;justify-content:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="board">
+    <h1>Barnyard Auction</h1>
+    <p id="evtline">Run your small-animal sale from one screen.</p>
+    <div class="tot">
+      <div><b id="tLots">0</b><span>Lots entered</span></div>
+      <div><b id="tSold">0</b><span>Sold</span></div>
+      <div><b id="tGross">$0</b><span>Gross sales</span></div>
+      <div><b id="tAvg">$0</b><span>Average price</span></div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <select id="evt" aria-label="Choose event"></select>
+    <button class="ghost" id="newEvt">New event</button>
+    <button class="ghost" id="delEvt">Delete event</button>
+    <button class="ghost" id="csv" style="margin-left:auto">Export CSV</button>
+  </div>
+
+  <div class="panel">
+    <h2>Add a lot</h2>
+    <form class="add" id="addForm">
+      <input id="fEx" placeholder="Exhibitor name" required>
+      <input id="fSp" placeholder="Species (rabbit, hen, goat…)" required>
+      <input id="fDe" class="full" placeholder="Description (breed, weight, pen of 3…)">
+      <button type="submit" class="full">Add lot</button>
+    </form>
+  </div>
+
+  <div class="lots" id="lots"></div>
+  <p class="note">This is a shareable demo. Everything you enter stays in your own browser and isn’t sent anywhere, so each person who opens the link starts fresh.</p>
+</div>
+
+<script>
+(function(){
+  var KEY='barnyard-demo-v1', S;
+  function load(){
+    try{var r=localStorage.getItem(KEY); if(r){S=JSON.parse(r);}}catch(e){}
+    if(!S||!S.events||!S.events.length){
+      var id='e'+Date.now();
+      S={current:id,events:[{id:id,name:'County Fair Small Animal Sale',lots:[
+        {n:1,ex:'Maddie R.',sp:'Rabbit',de:'Pair of Mini Rex, 10 wks',buyer:'Hayes Feed & Seed',price:85},
+        {n:2,ex:'Tyler B.',sp:'Hen',de:'Pen of 3 Buff Orpingtons',buyer:'',price:null},
+        {n:3,ex:'Ava P.',sp:'Goat',de:'Nubian wether, 62 lb',buyer:'',price:null}
+      ]}]};
+    }
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  function cur(){return S.events.find(function(e){return e.id===S.current})||S.events[0];}
+  function money(n){return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:2});}
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML;}
+  var $=function(i){return document.getElementById(i)};
+
+  function render(){
+    var ev=cur(); S.current=ev.id;
+    var sel=$('evt'); sel.innerHTML='';
+    S.events.forEach(function(e){var o=document.createElement('option');o.value=e.id;o.textContent=e.name;if(e.id===ev.id)o.selected=true;sel.appendChild(o);});
+    $('evtline').textContent=ev.name;
+    var sold=ev.lots.filter(function(l){return l.price!=null});
+    var gross=sold.reduce(function(a,l){return a+l.price},0);
+    $('tLots').textContent=ev.lots.length;
+    $('tSold').textContent=sold.length;
+    $('tGross').textContent=money(gross);
+    $('tAvg').textContent=sold.length?money(gross/sold.length):'$0';
+    var box=$('lots'); box.innerHTML='';
+    if(!ev.lots.length){box.innerHTML='<div class="empty">No lots yet. Add the first one above.</div>';save();return;}
+    ev.lots.forEach(function(l,i){
+      var d=document.createElement('div');d.className='lot'+(l.price!=null?' sold':'');
+      var right;
+      if(l.price!=null){
+        right='<div class="sale"><div><div class="price">'+money(l.price)+'</div><small>'+esc(l.buyer||'No buyer name')+'</small></div><button class="ghost" data-undo="'+i+'">Undo</button></div>';
+      }else{
+        right='<form class="sale" data-sell="'+i+'"><input name="buyer" placeholder="Buyer" aria-label="Buyer"><input name="price" type="number" min="0" step="0.01" placeholder="Price" aria-label="Sale price" required><button type="submit">Sell</button></form>';
+      }
+      d.innerHTML='<div class="num">'+l.n+'</div><div><h3>'+esc(l.sp)+' &middot; '+esc(l.ex)+'</h3><small>'+esc(l.de||'No description')+'</small></div>'+right+'';
+      var rm=document.createElement('button');rm.className='danger';rm.textContent='Remove';rm.setAttribute('data-rm',i);
+      d.querySelector('div:nth-child(2)').appendChild(document.createElement('br'));
+      d.querySelector('div:nth-child(2)').appendChild(rm);
+      box.appendChild(d);
+    });
+    save();
+  }
+
+  $('evt').addEventListener('change',function(e){S.current=e.target.value;render();});
+  $('newEvt').addEventListener('click',function(){
+    var name=prompt('Name this event (for example, 2026 4-H Livestock Sale):');
+    if(!name||!name.trim())return;
+    var id='e'+Date.now();S.events.push({id:id,name:name.trim(),lots:[]});S.current=id;render();
+  });
+  $('delEvt').addEventListener('click',function(){
+    var ev=cur();
+    if(S.events.length<2){alert('Keep at least one event. Rename by creating a new one first.');return;}
+    if(!confirm('Delete “'+ev.name+'” and all its lots?'))return;
+    S.events=S.events.filter(function(e){return e.id!==ev.id});S.current=S.events[0].id;render();
+  });
+  $('addForm').addEventListener('submit',function(e){
+    e.preventDefault();var ev=cur();
+    var n=ev.lots.reduce(function(m,l){return Math.max(m,l.n)},0)+1;
+    ev.lots.push({n:n,ex:$('fEx').value.trim(),sp:$('fSp').value.trim(),de:$('fDe').value.trim(),buyer:'',price:null});
+    e.target.reset();$('fEx').focus();render();
+  });
+  $('lots').addEventListener('submit',function(e){
+    var i=e.target.getAttribute('data-sell');if(i==null)return;e.preventDefault();
+    var l=cur().lots[i];l.buyer=e.target.buyer.value.trim();l.price=parseFloat(e.target.price.value);render();
+  });
+  $('lots').addEventListener('click',function(e){
+    var u=e.target.getAttribute('data-undo'),r=e.target.getAttribute('data-rm');
+    if(u!=null){var l=cur().lots[u];l.price=null;l.buyer='';render();}
+    if(r!=null){if(confirm('Remove this lot?')){cur().lots.splice(r,1);render();}}
+  });
+  $('csv').addEventListener('click',function(){
+    var ev=cur(),rows=[['Lot','Exhibitor','Species','Description','Buyer','Price']];
+    ev.lots.forEach(function(l){rows.push([l.n,l.ex,l.sp,l.de,l.buyer,l.price==null?'':l.price]);});
+    var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(txt);
+    a.download=ev.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.csv';document.body.appendChild(a);a.click();a.remove();
+  });
+  load();render();
+})();
+</script>
+</body>
+</html>
