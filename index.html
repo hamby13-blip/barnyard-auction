@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barnyard Auction</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5ef;--surface:#fff;--ink:#1d2b26;--muted:#5d6b64;--line:#d9dcd0;--board:#1d2b26;--board-ink:#f4f5ef;--ticket:#f2c230;--ribbon:#b5372b;--ok:#2f7a4b;--next:#3a6ea5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141b18;--surface:#1d2723;--ink:#eef0e8;--muted:#9aa89f;--line:#33423b;--board:#0d1210;--ok:#5cc184;--next:#6aa3d8;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141b18;--surface:#1d2723;--ink:#eef0e8;--muted:#9aa89f;--line:#33423b;--board:#0d1210;--ok:#5cc184;--next:#6aa3d8;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Archivo,system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:920px;margin:0 auto;padding:16px}
+header.board{background:var(--board);color:var(--board-ink);border-radius:14px;padding:20px;margin-bottom:16px}
+header.board h1{margin:0 0 4px;font-weight:800;font-size:1.7rem;letter-spacing:-.01em}
+header.board p{margin:0;color:#b9c4bd;font-size:.95rem}
+.tot{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.tot div{flex:1 1 100px;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 12px}
+.tot b{display:block;font-size:1.35rem;font-weight:800;color:var(--ticket)}
+.tot span{font-size:.8rem;color:#b9c4bd}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+select,input,button,textarea{font:inherit;color:var(--ink)}
+select,input,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%}
+button{border:0;border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer;background:var(--ticket);color:#1d2b26}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+button.danger{background:transparent;color:var(--ribbon);border:0;padding:6px 8px}
+button.sm{padding:6px 10px;font-size:.9rem}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--ticket);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.panel h2{margin:0 0 12px;font-size:1.05rem}
+.panel h3{margin:16px 0 8px;font-size:.95rem}
+form.add,form.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+form .full,.full{grid-column:1/-1}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+label.fld > span{font-weight:600;color:var(--ink)}
+.lots{display:grid;gap:10px}
+.lot{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.lot.next-up{border-color:var(--next);box-shadow:0 0 0 2px color-mix(in srgb,var(--next) 35%,transparent)}
+.lot.next-up .num{background:var(--next);color:#fff}
+.num{min-width:48px;text-align:center;font-weight:800;font-size:1.25rem;background:var(--ticket);color:#1d2b26;border-radius:8px;padding:8px 6px}
+.lot.sold .num{background:var(--ok);color:#fff}
+.lot h3{margin:0;font-size:1rem}
+.lot small{color:var(--muted)}
+.badge{display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--next);color:#fff;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.sale{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.sale input,.sale select{width:110px}
+.price{font-weight:800;font-size:1.15rem;color:var(--ok)}
+.addons{margin-top:6px;font-size:.85rem;color:var(--muted)}
+.addons strong{color:var(--ink)}
+.lot-actions{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.note{font-size:.85rem;color:var(--muted);margin-top:18px}
+.example-banner{background:color-mix(in srgb,var(--ticket) 28%,var(--surface));border:1px solid var(--ticket);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button[aria-selected="true"]{background:var(--board);color:var(--board-ink)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.filters .fld{flex:1 1 140px}
+.buyers-list{display:grid;gap:8px}
+.buyer-row{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px}
+.buyer-row .bn{font-weight:800;font-size:1.1rem;background:var(--ticket);color:#1d2b26;border-radius:8px;text-align:center;padding:8px 4px}
+.paid{color:var(--ok);font-weight:700;font-size:.85rem}
+.unpaid{color:var(--ribbon);font-weight:700;font-size:.85rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.dlg-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:1000}
+.dlg{background:var(--surface);color:var(--ink);border-radius:14px;padding:18px;max-width:420px;width:100%;border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.dlg h2{margin:0 0 8px;font-size:1.15rem}
+.dlg p{margin:0 0 12px;color:var(--muted)}
+.dlg .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.dlg .stack{display:grid;gap:8px}
+.hidden{display:none!important}
+.print-only{display:none}
+@media (max-width:560px){.lot{grid-template-columns:auto 1fr}.sale{grid-column:1/-1;justify-content:flex-start}.buyer-row{grid-template-columns:48px 1fr}}
+@media print{
+  body{background:#fff;color:#000}
+  .no-print{display:none!important}
+  .print-only{display:block!important}
+  .wrap{max-width:none;padding:0}
+  .print-sheet{page-break-after:always;padding:24px;break-after:page}
+  .print-sheet:last-child{page-break-after:auto;break-after:auto}
+  .print-sheet h1{font-size:1.4rem;margin:0 0 4px}
+  .print-sheet table{width:100%;border-collapse:collapse;margin-top:12px}
+  .print-sheet th,.print-sheet td{border-bottom:1px solid #ccc;padding:6px 4px;text-align:left;font-size:.9rem}
+  .print-sheet .total{font-weight:800;font-size:1.1rem;margin-top:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap no-print">
+  <header class="board">
+    <h1>Barnyard Auction</h1>
+    <p id="evtline">Run your small-animal sale from one screen.</p>
+    <div class="tot" role="group" aria-label="Sale totals">
+      <div><b id="tLots">0</b><span>Lots entered</span></div>
+      <div><b id="tSold">0</b><span>Sold</span></div>
+      <div><b id="tGross">$0</b><span>Gross sales</span></div>
+      <div><b id="tAddons">$0</b><span>Add-ons / support</span></div>
+      <div><b id="tFee">$0</b><span>Sale fee</span></div>
+      <div><b id="tNet">$0</b><span>Net to exhibitors</span></div>
+    </div>
+  </header>
+
+  <div id="exampleBanner" class="example-banner hidden">
+    <div><strong>Example data</strong> — this event is sample seed data so you can try the app. Clear it before your real sale.</div>
+    <button type="button" class="sm" id="clearExample">Clear example data</button>
+  </div>
+
+  <div class="bar">
+    <label class="fld" style="flex:1 1 180px;margin:0"><span class="sr-only">Choose event</span>
+      <select id="evt" aria-label="Choose event"></select>
+    </label>
+    <button type="button" class="ghost" id="newEvt">New event</button>
+    <button type="button" class="ghost" id="renEvt">Rename</button>
+    <button type="button" class="ghost" id="delEvt">Delete event</button>
+    <button type="button" class="ghost" id="themeBtn" aria-label="Toggle light or dark theme" title="Theme">Theme</button>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="tabLots" aria-selected="true" aria-controls="secLots">Lots</button>
+    <button type="button" role="tab" id="tabBuyers" aria-selected="false" aria-controls="secBuyers">Buyers</button>
+    <button type="button" role="tab" id="tabReports" aria-selected="false" aria-controls="secReports">Reports &amp; backup</button>
+  </div>
+
+  <section id="secLots" role="tabpanel" aria-labelledby="tabLots">
+    <div class="panel">
+      <h2>Event settings</h2>
+      <form class="grid" id="feeForm" onsubmit="return false">
+        <label class="fld"><span>Commission / sale fee %</span>
+          <input id="fFee" type="number" min="0" max="100" step="0.01" value="0" aria-describedby="feeHint">
+        </label>
+        <p id="feeHint" class="note" style="margin:0;align-self:end">Applied to sale price only (not add-ons). Net = sale − fee + add-ons.</p>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Add a lot</h2>
+      <form class="add" id="addForm">
+        <label class="fld"><span>Exhibitor</span><input id="fEx" name="ex" required autocomplete="name"></label>
+        <label class="fld"><span>Species</span><input id="fSp" name="sp" required placeholder="rabbit, hen, goat…"></label>
+        <label class="fld full"><span>Description</span><input id="fDe" name="de" placeholder="breed, weight, pen of 3…"></label>
+        <button type="submit" class="full">Add lot</button>
+      </form>
+    </div>
+
+    <div class="filters">
+      <label class="fld"><span>Show</span>
+        <select id="fStatus" aria-label="Filter by status">
+          <option value="all">All lots</option>
+          <option value="unsold">Unsold</option>
+          <option value="sold">Sold</option>
+        </select>
+      </label>
+      <label class="fld"><span>Search exhibitor or species</span>
+        <input id="fSearch" type="search" placeholder="Search…" aria-label="Search exhibitor or species">
+      </label>
+    </div>
+
+    <div class="lots" id="lots" aria-live="polite"></div>
+  </section>
+
+  <section id="secBuyers" role="tabpanel" aria-labelledby="tabBuyers" class="hidden">
+    <div class="panel">
+      <h2>Buyer registry</h2>
+      <form class="add" id="buyerForm">
+        <label class="fld"><span>Bidder #</span><input id="bNum" name="num" type="number" min="1" step="1" required></label>
+        <label class="fld"><span>Name</span><input id="bName" name="name" required></label>
+        <label class="fld"><span>Business (optional)</span><input id="bBiz" name="biz"></label>
+        <label class="fld"><span>Phone (optional)</span><input id="bPhone" name="phone" type="tel"></label>
+        <button type="submit" class="full">Add buyer</button>
+      </form>
+      <div class="buyers-list" id="buyers" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section id="secReports" role="tabpanel" aria-labelledby="tabReports" class="hidden">
+    <div class="panel">
+      <h2>Printable reports</h2>
+      <div class="bar" style="margin:0">
+        <button type="button" id="printInvoices">Buyer invoices</button>
+        <button type="button" class="ghost" id="printSettlements">Exhibitor settlements</button>
+        <button type="button" class="ghost" id="printBill">Sale bill (catalog)</button>
+      </div>
+      <p class="note" style="margin-top:10px">Each buyer invoice prints on its own page. Use your browser’s print dialog.</p>
+    </div>
+    <div class="panel">
+      <h2>Backup &amp; export</h2>
+      <div class="bar" style="margin:0">
+        <button type="button" id="jsonExport">Export JSON backup</button>
+        <button type="button" class="ghost" id="jsonImport">Import JSON…</button>
+        <button type="button" class="ghost" id="csv">Export CSV</button>
+        <input type="file" id="jsonFile" accept="application/json,.json" class="sr-only" aria-hidden="true">
+      </div>
+    </div>
+  </section>
+
+  <p class="note">Data is saved only on this device (in your browser’s local storage). It is never sent to a server. Export a JSON backup before clearing browser data, switching phones, or sharing a computer — and after a big sale day.</p>
+</div>
+
+<div id="printRoot" class="print-only" aria-hidden="true"></div>
+
+<div id="dlg" class="dlg-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <div class="dlg">
+    <h2 id="dlgTitle">Dialog</h2>
+    <p id="dlgMsg"></p>
+    <div id="dlgBody" class="stack"></div>
+    <div class="actions">
+      <button type="button" class="ghost" id="dlgCancel">Cancel</button>
+      <button type="button" id="dlgOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var KEY='barnyard-demo-v1', S;
+  var filterStatus='all', filterQ='';
+  var dlgResolve=null, dlgMode='alert';
+
+  function uid(p){return (p||'id')+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  function money(n){n=Number(n)||0;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
+  var $=function(i){return document.getElementById(i)};
+
+  function migrate(raw){
+    if(!raw||!raw.events) return null;
+    raw.version=2;
+    raw.events.forEach(function(ev){
+      if(typeof ev.feePct!=='number') ev.feePct=0;
+      if(!Array.isArray(ev.buyers)) ev.buyers=[];
+      if(typeof ev.isExample!=='boolean'){
+        ev.isExample=!!(ev.lots&&ev.lots.length&&ev.lots.some(function(l){
+          return l.ex==='Maddie R.'||l.ex==='Tyler B.'||l.ex==='Ava P.';
+        }) && /county fair|example|demo|sample/i.test(ev.name||''));
+      }
+      (ev.lots||[]).forEach(function(l){
+        if(!l.id) l.id=uid('lot');
+        if(!Array.isArray(l.addOns)) l.addOns=[];
+        if(l.buyerId===undefined) l.buyerId=null;
+        if(l.price===undefined) l.price=null;
+        if(l.buyer==null) l.buyer='';
+      });
+      ev.buyers.forEach(function(b){
+        if(!b.id) b.id=uid('buy');
+        if(typeof b.paid!=='boolean') b.paid=false;
+        if(b.business==null) b.business='';
+        if(b.phone==null) b.phone='';
+        if(b.num==null) b.num=0;
+      });
+    });
+    return raw;
+  }
+
+  function seed(){
+    var id=uid('e');
+    return {version:2,current:id,events:[{
+      id:id,name:'Example — County Fair Small Animal Sale',feePct:0,isExample:true,
+      buyers:[
+        {id:uid('buy'),num:12,name:'Hayes Feed & Seed',business:'Hayes Feed & Seed',phone:'828-555-0142',paid:true},
+        {id:uid('buy'),num:27,name:'Pat Lawson',business:'',phone:'',paid:false}
+      ],
+      lots:[
+        {id:uid('lot'),n:1,ex:'Maddie R.',sp:'Rabbit',de:'Pair of Mini Rex, 10 wks',buyer:'Hayes Feed & Seed',buyerId:null,price:85,addOns:[{id:uid('ao'),amount:25,note:'Support from neighbors',buyerName:'Community'}]},
+        {id:uid('lot'),n:2,ex:'Tyler B.',sp:'Hen',de:'Pen of 3 Buff Orpingtons',buyer:'',buyerId:null,price:null,addOns:[]},
+        {id:uid('lot'),n:3,ex:'Ava P.',sp:'Goat',de:'Nubian wether, 62 lb',buyer:'',buyerId:null,price:null,addOns:[]}
+      ]
+    }]};
+  }
+
+  function load(){
+    try{var r=localStorage.getItem(KEY); if(r){S=migrate(JSON.parse(r));}}catch(e){S=null}
+    if(!S||!S.events||!S.events.length) S=seed();
+    // link example buyers if missing buyerId on sold lots
+    S.events.forEach(function(ev){
+      (ev.lots||[]).forEach(function(l){
+        if(l.price!=null && l.buyer && !l.buyerId){
+          var b=(ev.buyers||[]).find(function(x){return x.name===l.buyer||x.business===l.buyer});
+          if(b) l.buyerId=b.id;
+        }
+      });
+    });
+  }
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  function cur(){var e=S.events.find(function(e){return e.id===S.current})||S.events[0];S.current=e.id;return e}
+
+  function lotSale(l){return l.price==null?0:Number(l.price)||0}
+  function lotAddons(l){return (l.addOns||[]).reduce(function(a,x){return a+(Number(x.amount)||0)},0)}
+  function lotFee(l,pct){return lotSale(l)*((Number(pct)||0)/100)}
+  function lotNet(l,pct){return lotSale(l)-lotFee(l,pct)+lotAddons(l)}
+  function buyerLabel(b){return '#'+b.num+' '+b.name+(b.business?' ('+b.business+')':'')}
+
+  function findBuyerByNum(ev,num){
+    num=String(num).trim();
+    if(!num) return null;
+    return (ev.buyers||[]).find(function(b){return String(b.num)===num})||null;
+  }
+  function ensureBuyer(ev, nameOrNum, typedName){
+    // Prefer bidder number match; else use typed name; create registry entry only when number matches or we have a name
+    var byNum=findBuyerByNum(ev, nameOrNum);
+    if(byNum) return byNum;
+    var name=(typedName||nameOrNum||'').trim();
+    if(!name) return null;
+    var existing=(ev.buyers||[]).find(function(b){return b.name.toLowerCase()===name.toLowerCase()});
+    if(existing) return existing;
+    return null; // keep free-typed buyer without forcing registry
+  }
+
+  /* ---------- dialogs (replace prompt/alert/confirm) ---------- */
+  function openDlg(opts){
+    return new Promise(function(resolve){
+      dlgResolve=resolve; dlgMode=opts.mode||'alert';
+      $('dlgTitle').textContent=opts.title||'';
+      $('dlgMsg').textContent=opts.message||'';
+      $('dlgMsg').classList.toggle('hidden',!opts.message);
+      var body=$('dlgBody'); body.innerHTML='';
+      if(opts.fields){
+        opts.fields.forEach(function(f){
+          var lab=document.createElement('label'); lab.className='fld';
+          lab.innerHTML='<span>'+esc(f.label)+'</span>';
+          var inp=document.createElement(f.type==='textarea'?'textarea':'input');
+          if(f.type!=='textarea') inp.type=f.type||'text';
+          inp.id='dlg_'+f.name; inp.name=f.name;
+          if(f.value!=null) inp.value=f.value;
+          if(f.placeholder) inp.placeholder=f.placeholder;
+          if(f.required) inp.required=true;
+          if(f.min!=null) inp.min=f.min;
+          if(f.step!=null) inp.step=f.step;
+          if(f.autofocus) inp.setAttribute('data-autofocus','1');
+          lab.appendChild(inp); body.appendChild(lab);
+        });
+      }
+      $('dlgOk').textContent=opts.okText||'OK';
+      $('dlgCancel').textContent=opts.cancelText||'Cancel';
+      $('dlgCancel').classList.toggle('hidden', dlgMode==='alert');
+      $('dlg').classList.remove('hidden');
+      var focusEl=body.querySelector('[data-autofocus]')|| (dlgMode==='alert'?$('dlgOk'):body.querySelector('input,textarea')) || $('dlgOk');
+      setTimeout(function(){focusEl&&focusEl.focus()},30);
+    });
+  }
+  function closeDlg(val){
+    $('dlg').classList.add('hidden');
+    var r=dlgResolve; dlgResolve=null; if(r) r(val);
+  }
+  function readDlgFields(){
+    var out={}; $('dlgBody').querySelectorAll('input,textarea').forEach(function(el){out[el.name]=el.value}); return out;
+  }
+  function dlgAlert(title,message){return openDlg({mode:'alert',title:title,message:message,okText:'OK'})}
+  function dlgConfirm(title,message){return openDlg({mode:'confirm',title:title,message:message,okText:'Yes',cancelText:'Cancel'})}
+  function dlgPrompt(title,message,fields){return openDlg({mode:'prompt',title:title,message:message,fields:fields,okText:'Save',cancelText:'Cancel'})}
+
+  $('dlgCancel').onclick=function(){closeDlg(null)};
+  $('dlgOk').onclick=function(){
+    if(dlgMode==='alert') closeDlg(true);
+    else if(dlgMode==='confirm') closeDlg(true);
+    else {
+      var fields=$('dlgBody').querySelectorAll('input,textarea');
+      for(var i=0;i<fields.length;i++){ if(fields[i].required && !String(fields[i].value).trim()){ fields[i].focus(); return; } }
+      closeDlg(readDlgFields());
+    }
+  };
+  $('dlg').addEventListener('keydown',function(e){
+    if(e.key==='Escape'){e.preventDefault();closeDlg(null)}
+    if(e.key==='Enter' && e.target.tagName!=='TEXTAREA'){e.preventDefault();$('dlgOk').click()}
+  });
+  $('dlg').addEventListener('click',function(e){if(e.target===$('dlg')) closeDlg(null)});
+
+  /* ---------- theme ---------- */
+  function applyTheme(){
+    var t=localStorage.getItem('barnyard-theme');
+    if(t==='light'||t==='dark') document.documentElement.setAttribute('data-theme',t);
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  $('themeBtn').onclick=function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var next=cur==='dark'?'light':(cur==='light'?'':'dark');
+    if(!cur){
+      var prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+      next=prefersDark?'light':'dark';
+    }
+    if(next){document.documentElement.setAttribute('data-theme',next);localStorage.setItem('barnyard-theme',next)}
+    else{document.documentElement.removeAttribute('data-theme');localStorage.removeItem('barnyard-theme')}
+  };
+  applyTheme();
+
+  /* ---------- tabs ---------- */
+  function showTab(name){
+    ['Lots','Buyers','Reports'].forEach(function(n){
+      var on=n===name;
+      $('tab'+n).setAttribute('aria-selected',on?'true':'false');
+      $('sec'+n).classList.toggle('hidden',!on);
+    });
+  }
+  $('tabLots').onclick=function(){showTab('Lots')};
+  $('tabBuyers').onclick=function(){showTab('Buyers');renderBuyers()};
+  $('tabReports').onclick=function(){showTab('Reports')};
+
+  /* ---------- render ---------- */
+  function totals(ev){
+    var sold=ev.lots.filter(function(l){return l.price!=null});
+    var gross=sold.reduce(function(a,l){return a+lotSale(l)},0);
+    var add=ev.lots.reduce(function(a,l){return a+lotAddons(l)},0);
+    var fee=sold.reduce(function(a,l){return a+lotFee(l,ev.feePct)},0);
+    var net=gross-fee+add;
+    return {sold:sold.length,gross:gross,add:add,fee:fee,net:net,avg:sold.length?gross/sold.length:0};
+  }
+
+  function firstUnsoldIndex(lots){
+    for(var i=0;i<lots.length;i++) if(lots[i].price==null) return i;
+    return -1;
+  }
+
+  function filteredLots(ev){
+    var q=filterQ.trim().toLowerCase();
+    return ev.lots.map(function(l,i){return {l:l,i:i}}).filter(function(x){
+      if(filterStatus==='sold' && x.l.price==null) return false;
+      if(filterStatus==='unsold' && x.l.price!=null) return false;
+      if(!q) return true;
+      return (x.l.ex||'').toLowerCase().indexOf(q)>=0 || (x.l.sp||'').toLowerCase().indexOf(q)>=0 || (x.l.de||'').toLowerCase().indexOf(q)>=0;
+    });
+  }
+
+  function render(){
+    var ev=cur();
+    var sel=$('evt'); sel.innerHTML='';
+    S.events.forEach(function(e){
+      var o=document.createElement('option'); o.value=e.id; o.textContent=e.name; if(e.id===ev.id)o.selected=true; sel.appendChild(o);
+    });
+    $('evtline').textContent=ev.name+(ev.feePct?(' · '+ev.feePct+'% fee'):'');
+    $('fFee').value=ev.feePct||0;
+    $('exampleBanner').classList.toggle('hidden',!ev.isExample);
+
+    var t=totals(ev);
+    $('tLots').textContent=ev.lots.length;
+    $('tSold').textContent=t.sold;
+    $('tGross').textContent=money(t.gross);
+    $('tAddons').textContent=money(t.add);
+    $('tFee').textContent=money(t.fee);
+    $('tNet').textContent=money(t.net);
+
+    var nextIdx=firstUnsoldIndex(ev.lots);
+    var box=$('lots'); box.innerHTML='';
+    var list=filteredLots(ev);
+    if(!ev.lots.length){box.innerHTML='<div class="empty">No lots yet. Add the first one above.</div>';save();return}
+    if(!list.length){box.innerHTML='<div class="empty">No lots match this filter.</div>';save();return}
+
+    list.forEach(function(item){
+      var l=item.l, i=item.i;
+      var d=document.createElement('div');
+      d.className='lot'+(l.price!=null?' sold':'')+(i===nextIdx?' next-up':'');
+      d.setAttribute('data-idx',i);
+
+      var nextBadge=i===nextIdx?' <span class="badge">Next up</span>':'';
+      var info='<div><h3>'+esc(l.sp)+' &middot; '+esc(l.ex)+nextBadge+'</h3><small>'+esc(l.de||'No description')+'</small>';
+      var ao=lotAddons(l);
+      if(l.price!=null){
+        info+='<div class="addons">Sale '+money(l.price);
+        if(ao) info+=' · Add-ons <strong>'+money(ao)+'</strong>';
+        if(ev.feePct) info+=' · Fee '+money(lotFee(l,ev.feePct))+' · Net '+money(lotNet(l,ev.feePct));
+        info+='</div>';
+      }
+      info+='<div class="lot-actions">';
+      info+='<button type="button" class="ghost sm" data-edit="'+i+'">Edit</button>';
+      info+='<button type="button" class="ghost sm" data-up="'+i+'" '+(i===0?'disabled':'')+' aria-label="Move lot up">↑</button>';
+      info+='<button type="button" class="ghost sm" data-down="'+i+'" '+(i===ev.lots.length-1?'disabled':'')+' aria-label="Move lot down">↓</button>';
+      if(l.price!=null) info+='<button type="button" class="ghost sm" data-addon="'+i+'">Add-on</button>';
+      info+='<button type="button" class="danger sm" data-rm="'+i+'">Remove</button>';
+      info+='</div></div>';
+
+      var right='';
+      if(l.price!=null){
+        right='<div class="sale"><div><div class="price">'+money(l.price)+'</div><small>'+esc(l.buyer||'No buyer name')+'</small></div>'+
+          '<button type="button" class="ghost sm" data-undo="'+i+'">Undo</button></div>';
+      } else {
+        var opts='<option value="">— bidder # —</option>';
+        (ev.buyers||[]).slice().sort(function(a,b){return a.num-b.num}).forEach(function(b){
+          opts+='<option value="'+esc(String(b.num))+'">'+esc('#'+b.num+' '+b.name)+'</option>';
+        });
+        right='<form class="sale" data-sell="'+i+'">'+
+          '<label class="sr-only" for="buyNum'+i+'">Bidder number</label>'+
+          '<select id="buyNum'+i+'" name="bidder" aria-label="Bidder number">'+opts+'</select>'+
+          '<label class="sr-only" for="buyName'+i+'">Buyer name</label>'+
+          '<input id="buyName'+i+'" name="buyer" placeholder="Buyer name" aria-label="Buyer name" autocomplete="off">'+
+          '<label class="sr-only" for="buyPrice'+i+'">Sale price</label>'+
+          '<input id="buyPrice'+i+'" name="price" type="number" min="0" step="0.01" placeholder="Price" aria-label="Sale price" required>'+
+          '<button type="submit">Sell</button></form>';
+      }
+
+      d.innerHTML='<div class="num">'+l.n+'</div>'+info+right;
+      box.appendChild(d);
+    });
+    save();
+    if(!$('secBuyers').classList.contains('hidden')) renderBuyers();
+  }
+
+  function renderBuyers(){
+    var ev=cur(), box=$('buyers'); box.innerHTML='';
+    if(!ev.buyers.length){box.innerHTML='<div class="empty">No buyers yet. Add bidder numbers before or during the sale.</div>';return}
+    ev.buyers.slice().sort(function(a,b){return a.num-b.num}).forEach(function(b){
+      var due=0;
+      ev.lots.forEach(function(l){
+        if(l.price==null) return;
+        var match=l.buyerId===b.id || (!l.buyerId && l.buyer && l.buyer.toLowerCase()===b.name.toLowerCase());
+        if(match) due+=lotSale(l);
+        (l.addOns||[]).forEach(function(a){
+          if(a.buyerId===b.id || (a.buyerName&&a.buyerName.toLowerCase()===b.name.toLowerCase())) due+=Number(a.amount)||0;
+        });
+      });
+      var row=document.createElement('div'); row.className='buyer-row';
+      row.innerHTML='<div class="bn">'+esc(String(b.num))+'</div>'+
+        '<div><strong>'+esc(b.name)+'</strong>'+(b.business?'<br><small>'+esc(b.business)+'</small>':'')+
+        (b.phone?'<br><small>'+esc(b.phone)+'</small>':'')+
+        '<br><small>Due '+money(due)+'</small> · <span class="'+(b.paid?'paid':'unpaid')+'">'+(b.paid?'Paid':'Unpaid')+'</span></div>'+
+        '<div style="display:flex;flex-direction:column;gap:4px">'+
+        '<button type="button" class="ghost sm" data-buyer-paid="'+esc(b.id)+'">'+(b.paid?'Mark unpaid':'Mark paid')+'</button>'+
+        '<button type="button" class="ghost sm" data-buyer-edit="'+esc(b.id)+'">Edit</button>'+
+        '<button type="button" class="danger sm" data-buyer-rm="'+esc(b.id)+'">Remove</button></div>';
+      box.appendChild(row);
+    });
+  }
+
+  /* ---------- events ---------- */
+  $('evt').onchange=function(e){S.current=e.target.value;render()};
+  $('fFee').onchange=function(){
+    var v=parseFloat($('fFee').value); if(isNaN(v)||v<0)v=0; if(v>100)v=100;
+    cur().feePct=v; $('fFee').value=v; render();
+  };
+  $('fStatus').onchange=function(){filterStatus=this.value;render()};
+  $('fSearch').oninput=function(){filterQ=this.value;render()};
+
+  $('newEvt').onclick=async function(){
+    var res=await dlgPrompt('New event','Name this sale (for example, 2026 4-H Livestock Sale).',[
+      {name:'name',label:'Event name',required:true,autofocus:true}
+    ]);
+    if(!res||!res.name.trim()) return;
+    var id=uid('e');
+    S.events.push({id:id,name:res.name.trim(),feePct:0,isExample:false,buyers:[],lots:[]});
+    S.current=id; render();
+  };
+  $('renEvt').onclick=async function(){
+    var ev=cur();
+    var res=await dlgPrompt('Rename event','',[
+      {name:'name',label:'Event name',required:true,value:ev.name,autofocus:true}
+    ]);
+    if(!res||!res.name.trim()) return;
+    ev.name=res.name.trim(); render();
+  };
+  $('delEvt').onclick=async function(){
+    var ev=cur();
+    if(S.events.length<2){await dlgAlert('Keep one event','Keep at least one event. Rename this one or create another first.');return}
+    var ok=await dlgConfirm('Delete event','Delete “'+ev.name+'” and all its lots and buyers?');
+    if(!ok) return;
+    S.events=S.events.filter(function(e){return e.id!==ev.id}); S.current=S.events[0].id; render();
+  };
+  $('clearExample').onclick=async function(){
+    var ok=await dlgConfirm('Clear example data','Remove this example event and start a blank sale?');
+    if(!ok) return;
+    var ev=cur();
+    if(S.events.length===1){
+      var id=uid('e');
+      S.events=[{id:id,name:'My Small Animal Sale',feePct:0,isExample:false,buyers:[],lots:[]}];
+      S.current=id;
+    } else {
+      S.events=S.events.filter(function(e){return e.id!==ev.id});
+      S.current=S.events[0].id;
+    }
+    render();
+  };
+
+  $('addForm').onsubmit=function(e){
+    e.preventDefault(); var ev=cur();
+    var n=ev.lots.reduce(function(m,l){return Math.max(m,l.n||0)},0)+1;
+    ev.lots.push({id:uid('lot'),n:n,ex:$('fEx').value.trim(),sp:$('fSp').value.trim(),de:$('fDe').value.trim(),buyer:'',buyerId:null,price:null,addOns:[]});
+    e.target.reset(); $('fEx').focus(); render();
+  };
+
+  $('buyerForm').onsubmit=async function(e){
+    e.preventDefault(); var ev=cur();
+    var num=parseInt($('bNum').value,10);
+    var name=$('bName').value.trim();
+    if(!num||!name) return;
+    if(ev.buyers.some(function(b){return b.num===num})){await dlgAlert('Bidder number taken','That bidder number is already registered.');return}
+    ev.buyers.push({id:uid('buy'),num:num,name:name,business:$('bBiz').value.trim(),phone:$('bPhone').value.trim(),paid:false});
+    e.target.reset(); $('bNum').focus(); renderBuyers(); save(); render();
+  };
+
+  $('lots').addEventListener('change',function(e){
+    if(e.target.name!=='bidder') return;
+    var form=e.target.closest('form'); if(!form) return;
+    var b=findBuyerByNum(cur(), e.target.value);
+    if(b) form.buyer.value=b.name;
+  });
+
+  $('lots').addEventListener('submit',function(e){
+    var i=e.target.getAttribute('data-sell'); if(i==null) return; e.preventDefault();
+    i=+i; var ev=cur(), l=ev.lots[i];
+    var bidder=e.target.bidder?e.target.bidder.value:'';
+    var typed=e.target.buyer.value.trim();
+    var price=parseFloat(e.target.price.value);
+    if(isNaN(price)||price<0) return;
+    var b=findBuyerByNum(ev,bidder);
+    if(b){ l.buyerId=b.id; l.buyer=b.name; }
+    else { l.buyerId=null; l.buyer=typed; }
+    if(!l.buyer){ e.target.buyer.focus(); return; }
+    l.price=price; render();
+  });
+
+  $('lots').addEventListener('click',async function(e){
+    var t=e.target; if(t.tagName!=='BUTTON') return;
+    var ev=cur();
+    var undo=t.getAttribute('data-undo'), rm=t.getAttribute('data-rm');
+    var edit=t.getAttribute('data-edit'), up=t.getAttribute('data-up'), down=t.getAttribute('data-down');
+    var addon=t.getAttribute('data-addon');
+
+    if(undo!=null){
+      var l=ev.lots[+undo]; l.price=null; l.buyer=''; l.buyerId=null; /* keep add-ons? clear them on undo sale */ l.addOns=[]; render(); return;
+    }
+    if(rm!=null){
+      var ok=await dlgConfirm('Remove lot','Remove lot #'+ev.lots[+rm].n+'?'); if(!ok) return;
+      ev.lots.splice(+rm,1); render(); return;
+    }
+    if(up!=null){
+      var i=+up; if(i>0){ var tmp=ev.lots[i-1]; ev.lots[i-1]=ev.lots[i]; ev.lots[i]=tmp; render(); } return;
+    }
+    if(down!=null){
+      var j=+down; if(j<ev.lots.length-1){ var t2=ev.lots[j+1]; ev.lots[j+1]=ev.lots[j]; ev.lots[j]=t2; render(); } return;
+    }
+    if(edit!=null){
+      var lot=ev.lots[+edit];
+      var res=await dlgPrompt('Edit lot','',[
+        {name:'ex',label:'Exhibitor',required:true,value:lot.ex,autofocus:true},
+        {name:'sp',label:'Species',required:true,value:lot.sp},
+        {name:'de',label:'Description',value:lot.de||''}
+      ]);
+      if(!res) return;
+      lot.ex=res.ex.trim(); lot.sp=res.sp.trim(); lot.de=(res.de||'').trim(); render(); return;
+    }
+    if(addon!=null){
+      var lot2=ev.lots[+addon];
+      var res2=await dlgPrompt('Add support money','Extra money for this lot after the sale (add-on / support).',[
+        {name:'amount',label:'Amount ($)',type:'number',min:'0',step:'0.01',required:true,autofocus:true},
+        {name:'note',label:'Note (optional)',placeholder:'e.g. neighbor support'},
+        {name:'buyer',label:'From (name or bidder #)',placeholder:'Who added the money'}
+      ]);
+      if(!res2) return;
+      var amt=parseFloat(res2.amount); if(isNaN(amt)||amt<=0) return;
+      var from=res2.buyer.trim();
+      var bb=findBuyerByNum(ev,from);
+      var entry={id:uid('ao'),amount:amt,note:(res2.note||'').trim(),buyerId:bb?bb.id:null,buyerName:bb?bb.name:from};
+      lot2.addOns=lot2.addOns||[]; lot2.addOns.push(entry); render(); return;
+    }
+  });
+
+  $('buyers').addEventListener('click',async function(e){
+    var t=e.target; if(t.tagName!=='BUTTON') return;
+    var ev=cur();
+    var paid=t.getAttribute('data-buyer-paid');
+    var edit=t.getAttribute('data-buyer-edit');
+    var rm=t.getAttribute('data-buyer-rm');
+    if(paid){
+      var b=ev.buyers.find(function(x){return x.id===paid}); if(b){b.paid=!b.paid; renderBuyers(); save()}
+      return;
+    }
+    if(edit){
+      var b2=ev.buyers.find(function(x){return x.id===edit}); if(!b2) return;
+      var res=await dlgPrompt('Edit buyer','',[
+        {name:'num',label:'Bidder #',type:'number',min:'1',required:true,value:b2.num,autofocus:true},
+        {name:'name',label:'Name',required:true,value:b2.name},
+        {name:'business',label:'Business',value:b2.business||''},
+        {name:'phone',label:'Phone',value:b2.phone||''}
+      ]);
+      if(!res) return;
+      var num=parseInt(res.num,10);
+      if(ev.buyers.some(function(x){return x.id!==b2.id && x.num===num})){await dlgAlert('Bidder number taken','That number belongs to someone else.');return}
+      b2.num=num; b2.name=res.name.trim(); b2.business=(res.business||'').trim(); b2.phone=(res.phone||'').trim();
+      // update lot buyer names linked to this id
+      ev.lots.forEach(function(l){if(l.buyerId===b2.id) l.buyer=b2.name});
+      renderBuyers(); render(); return;
+    }
+    if(rm){
+      var ok=await dlgConfirm('Remove buyer','Remove this buyer from the registry? Past sales keep the buyer name.');
+      if(!ok) return;
+      ev.buyers=ev.buyers.filter(function(x){return x.id!==rm});
+      renderBuyers(); render();
+    }
+  });
+
+  /* ---------- reports ---------- */
+  function buyerDue(ev,b){
+    var lines=[], sale=0, add=0;
+    ev.lots.forEach(function(l){
+      if(l.price==null) return;
+      var match=l.buyerId===b.id || (!l.buyerId && l.buyer && l.buyer.toLowerCase()===b.name.toLowerCase());
+      if(match){
+        lines.push({kind:'lot',n:l.n,desc:l.sp+' · '+l.ex+(l.de?' — '+l.de:''),amt:lotSale(l)});
+        sale+=lotSale(l);
+      }
+      (l.addOns||[]).forEach(function(a){
+        if(a.buyerId===b.id || (a.buyerName&&a.buyerName.toLowerCase()===b.name.toLowerCase())){
+          lines.push({kind:'addon',n:l.n,desc:'Add-on on lot #'+l.n+(a.note?' ('+a.note+')':''),amt:Number(a.amount)||0});
+          add+=Number(a.amount)||0;
+        }
+      });
+    });
+    return {lines:lines,sale:sale,add:add,total:sale+add};
+  }
+
+  function printHTML(html){
+    $('printRoot').innerHTML=html;
+    $('printRoot').setAttribute('aria-hidden','false');
+    window.print();
+    setTimeout(function(){ $('printRoot').innerHTML=''; $('printRoot').setAttribute('aria-hidden','true'); },500);
+  }
+
+  $('printInvoices').onclick=function(){
+    var ev=cur();
+    var buyers=ev.buyers.slice().sort(function(a,b){return a.num-b.num});
+    // also include free-typed buyers not in registry
+    var extras={};
+    ev.lots.forEach(function(l){
+      if(l.price==null||!l.buyer) return;
+      if(l.buyerId && buyers.some(function(b){return b.id===l.buyerId})) return;
+      if(buyers.some(function(b){return b.name.toLowerCase()===l.buyer.toLowerCase()})) return;
+      var k=l.buyer.toLowerCase();
+      if(!extras[k]) extras[k]={id:'x-'+k,num:'—',name:l.buyer,business:'',phone:'',paid:false};
+    });
+    var all=buyers.concat(Object.keys(extras).map(function(k){return extras[k]}));
+    var sheets=all.map(function(b){
+      var d=buyerDue(ev,b);
+      if(!d.lines.length) return '';
+      var rows=d.lines.map(function(ln){return '<tr><td>'+esc(String(ln.n))+'</td><td>'+esc(ln.desc)+'</td><td>'+money(ln.amt)+'</td></tr>'}).join('');
+      return '<div class="print-sheet"><h1>Buyer Invoice</h1>'+
+        '<div>'+esc(ev.name)+'</div>'+
+        '<div><strong>#'+esc(String(b.num))+' '+esc(b.name)+'</strong>'+(b.business?' · '+esc(b.business):'')+(b.phone?' · '+esc(b.phone):'')+'</div>'+
+        '<div>Status: '+(b.paid?'PAID':'UNPAID')+'</div>'+
+        '<table><thead><tr><th>Lot</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+        '<div class="total">Total due: '+money(d.total)+'</div></div>';
+    }).filter(Boolean).join('');
+    if(!sheets){ dlgAlert('Nothing to print','No sold lots yet.'); return; }
+    printHTML(sheets);
+  };
+
+  $('printSettlements').onclick=function(){
+    var ev=cur();
+    var byEx={};
+    ev.lots.forEach(function(l){
+      if(l.price==null) return;
+      if(!byEx[l.ex]) byEx[l.ex]=[];
+      byEx[l.ex].push(l);
+    });
+    var names=Object.keys(byEx).sort();
+    if(!names.length){ dlgAlert('Nothing to print','No sold lots yet.'); return; }
+    var sheets=names.map(function(ex){
+      var lots=byEx[ex], gross=0, fee=0, add=0;
+      var rows=lots.map(function(l){
+        var s=lotSale(l), f=lotFee(l,ev.feePct), a=lotAddons(l);
+        gross+=s; fee+=f; add+=a;
+        return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.sp)+(l.de?' — '+esc(l.de):'')+'</td><td>'+money(s)+'</td><td>'+money(a)+'</td><td>'+money(f)+'</td><td>'+money(lotNet(l,ev.feePct))+'</td></tr>';
+      }).join('');
+      return '<div class="print-sheet"><h1>Exhibitor Settlement</h1>'+
+        '<div>'+esc(ev.name)+'</div><div><strong>'+esc(ex)+'</strong></div>'+
+        (ev.feePct?'<div>Sale fee: '+esc(String(ev.feePct))+'%</div>':'')+
+        '<table><thead><tr><th>Lot</th><th>Item</th><th>Sale</th><th>Add-ons</th><th>Fee</th><th>Net</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+        '<div class="total">Gross '+money(gross)+' + Add-ons '+money(add)+' − Fee '+money(fee)+' = Net '+money(gross+add-fee)+'</div></div>';
+    }).join('');
+    printHTML(sheets);
+  };
+
+  $('printBill').onclick=function(){
+    var ev=cur();
+    var rows=ev.lots.map(function(l){
+      return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.ex)+'</td><td>'+esc(l.sp)+'</td><td>'+esc(l.de||'')+'</td><td>'+(l.price!=null?money(l.price):'')+'</td><td>'+esc(l.buyer||'')+'</td></tr>';
+    }).join('');
+    printHTML('<div class="print-sheet"><h1>Sale Bill</h1><div>'+esc(ev.name)+'</div>'+
+      '<table><thead><tr><th>#</th><th>Exhibitor</th><th>Species</th><th>Description</th><th>Price</th><th>Buyer</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+  };
+
+  /* ---------- CSV / JSON ---------- */
+  function download(filename, text, mime){
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([text],{type:mime||'text/plain'}));
+    a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+  }
+  function slug(s){return String(s).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase()||'barnyard'}
+
+  $('csv').onclick=function(){
+    var ev=cur();
+    var rows=[['Lot','Exhibitor','Species','Description','Buyer','Bidder#','Price','AddOns','Fee','Net','FeePct']];
+    ev.lots.forEach(function(l){
+      var bidder='';
+      if(l.buyerId){var b=ev.buyers.find(function(x){return x.id===l.buyerId}); if(b) bidder=b.num}
+      rows.push([l.n,l.ex,l.sp,l.de,l.buyer,bidder,l.price==null?'':l.price,lotAddons(l),l.price==null?'':lotFee(l,ev.feePct),l.price==null?'':lotNet(l,ev.feePct),ev.feePct||0]);
+    });
+    var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+    download(slug(ev.name)+'.csv', txt, 'text/csv;charset=utf-8');
+  };
+
+  $('jsonExport').onclick=function(){
+    var ev=cur();
+    var payload={format:'barnyard-auction',version:2,exportedAt:new Date().toISOString(),event:ev};
+    download(slug(ev.name)+'-backup.json', JSON.stringify(payload,null,2), 'application/json');
+  };
+  $('jsonImport').onclick=function(){$('jsonFile').click()};
+  $('jsonFile').onchange=async function(){
+    var f=this.files&&this.files[0]; if(!f) return;
+    try{
+      var text=await f.text();
+      this.value='';
+      var data=JSON.parse(text);
+      var ev=data.event||data;
+      if(!ev||!ev.name||!Array.isArray(ev.lots)){await dlgAlert('Invalid file','That JSON does not look like a Barnyard Auction backup.');return}
+      var ok=await dlgConfirm('Import event','Import "'+ev.name+'" as a new event? Your current events stay put.');
+      if(!ok) return;
+      // deep clone so we do not mutate the parsed object oddly
+      ev=JSON.parse(JSON.stringify(ev));
+      ev=migrate({version:2,events:[ev],current:ev.id||uid('e')}).events[0];
+      ev.id=uid('e'); ev.isExample=false;
+      if(!Array.isArray(ev.buyers)) ev.buyers=[];
+      S.events.push(ev); S.current=ev.id; render();
+      await new Promise(function(r){setTimeout(r,0)});
+      await dlgAlert('Imported','Event loaded.');
+    }catch(err){ this.value=''; await dlgAlert('Import failed','Could not read that file.'); }
+  };
+
+  load(); render();
+})();
+</script>
+</body>
+</html>
