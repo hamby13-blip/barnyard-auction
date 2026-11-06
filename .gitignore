@@ -1,6 +1,4 @@
 node_modules/
-package-lock.json
-package.json
 debug-*.mjs
 screens/backup-test.json
 screens/test-results.json

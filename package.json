@@ -1,0 +1,20 @@
+{
+  "name": "barnyard-auction",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.mjs",
+    "test": "node --test server/test/*.test.mjs",
+    "test:e2e": "node test-sale.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

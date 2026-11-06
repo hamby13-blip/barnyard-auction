@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# LEGACY. Production now runs the Node server (Dockerfile / railway.json),
+# not the Caddy bootstrap that reconstructed index.html from APP_B64_* vars.
+# This script remains only if you need to roll back to that static bundle.
+#
 # Regenerate gzipped base64 chunks of index.html for Railway env vars.
 # Usage: ./railway_bundle.sh
 # Prints APP_B64_PARTS and writes chunk files under .railway-bundle/
