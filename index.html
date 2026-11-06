@@ -73,6 +73,17 @@ label.fld > span{font-weight:600;color:var(--ink)}
 .dlg .stack{display:grid;gap:8px}
 .hidden{display:none!important}
 .print-only{display:none}
+.stack-form{display:grid;gap:8px}
+.auth-error{color:var(--ribbon);font-weight:700;margin:0 0 8px}
+.accountbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
+.accountbar #who{font-size:.92rem}
+.dlg.wide{max-width:520px;max-height:min(90vh,680px);overflow:auto}
+header.board .headrow{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+header.board .syncpill{flex:0 0 auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#d7f5e3;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:700;white-space:nowrap}
+header.board .syncpill.wait{color:var(--ticket);border-color:var(--ticket)}
+header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
+.member-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.member-row small{color:var(--muted)}
 @media (max-width:560px){.lot{grid-template-columns:auto 1fr}.sale{grid-column:1/-1;justify-content:flex-start}.buyer-row{grid-template-columns:48px 1fr}}
 @media print{
   body{background:#fff;color:#000}
@@ -89,10 +100,49 @@ label.fld > span{font-weight:600;color:var(--ink)}
 </style>
 </head>
 <body>
-<div class="wrap no-print">
+<div id="authScreen" class="wrap no-print">
   <header class="board">
     <h1>Barnyard Auction</h1>
-    <p id="evtline">Run your small-animal sale from one screen.</p>
+    <p>Sign in to clerk a youth or county-fair small-animal sale. Your fair or club keeps the sale, on every device you allow.</p>
+  </header>
+  <div class="panel">
+    <div class="tabs" id="authTabs" role="tablist" aria-label="Account">
+      <button type="button" id="authTabLogin" aria-selected="true">Sign in</button>
+      <button type="button" id="authTabSignup" aria-selected="false">Create account</button>
+    </div>
+    <p id="authError" class="auth-error hidden" role="alert"></p>
+    <form id="loginForm" class="stack-form">
+      <label class="fld"><span>Email</span><input id="liEmail" type="email" autocomplete="username" required></label>
+      <label class="fld"><span>Password</span><input id="liPassword" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Sign in</button>
+    </form>
+    <form id="signupForm" class="stack-form hidden">
+      <label class="fld"><span>Your name</span><input id="suName" autocomplete="name" required></label>
+      <label class="fld"><span>Email</span><input id="suEmail" type="email" autocomplete="username" required></label>
+      <label class="fld"><span>Password</span><input id="suPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="fld"><span>Fair or club</span><input id="suOrg" autocomplete="organization" placeholder="Wilkes County 4-H" required></label>
+      <button type="submit">Create account</button>
+      <p class="note" style="margin:0">You become the owner and can add other clerks.</p>
+    </form>
+    <form id="acceptForm" class="stack-form hidden">
+      <h2 style="margin:0;font-size:1.05rem">Join <span id="inviteOrgShow"></span></h2>
+      <p class="note" style="margin:0">This invite is for <strong id="inviteEmailShow"></strong>.</p>
+      <label class="fld"><span>Your name</span><input id="acName" autocomplete="name" required></label>
+      <label class="fld"><span>Password</span><input id="acPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button type="submit">Join and sign in</button>
+      <button type="button" class="ghost" id="inviteBack">Back to sign in</button>
+    </form>
+  </div>
+</div>
+<div id="appScreen" class="wrap no-print hidden">
+  <header class="board">
+    <div class="headrow">
+      <div>
+        <h1>Barnyard Auction</h1>
+        <p id="evtline">Run your small-animal sale from one screen.</p>
+      </div>
+      <span id="syncState" class="syncpill ok" role="status" aria-live="polite">Saved</span>
+    </div>
     <div class="tot" role="group" aria-label="Sale totals">
       <div><b id="tLots">0</b><span>Lots entered</span></div>
       <div><b id="tSold">0</b><span>Sold</span></div>
@@ -102,6 +152,14 @@ label.fld > span{font-weight:600;color:var(--ink)}
       <div><b id="tNet">$0</b><span>Net to exhibitors</span></div>
     </div>
   </header>
+
+  <div class="accountbar">
+    <div id="who"></div>
+    <div class="bar" style="margin:0">
+      <button type="button" class="ghost sm" id="peopleBtn">People</button>
+      <button type="button" class="ghost sm" id="logoutBtn">Sign out</button>
+    </div>
+  </div>
 
   <div id="exampleBanner" class="example-banner hidden">
     <div><strong>Example data</strong> — this event is sample seed data so you can try the app. Clear it before your real sale.</div>
@@ -190,13 +248,45 @@ label.fld > span{font-weight:600;color:var(--ink)}
       <div class="bar" style="margin:0">
         <button type="button" id="jsonExport">Export JSON backup</button>
         <button type="button" class="ghost" id="jsonImport">Import JSON…</button>
+        <button type="button" class="ghost hidden" id="importDevice">Import on-device sales</button>
         <button type="button" class="ghost" id="csv">Export CSV</button>
         <input type="file" id="jsonFile" accept="application/json,.json" class="sr-only" aria-hidden="true">
       </div>
     </div>
   </section>
 
-  <p class="note">Data is saved only on this device (in your browser’s local storage). It is never sent to a server. Export a JSON backup before clearing browser data, switching phones, or sharing a computer — and after a big sale day.</p>
+  <p class="note">Sales are saved to your fair or club and cached on this device, so a dropped Wi-Fi connection does not stop the sale. The status in the header shows Saved or Offline. Export a JSON backup after a big sale day.</p>
+</div>
+
+<div id="peopleDlg" class="dlg-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="peopleTitle">
+  <div class="dlg wide">
+    <h2 id="peopleTitle">People</h2>
+    <p id="peopleOrg"></p>
+    <p id="peopleMsg" class="note hidden" style="margin-top:0"></p>
+    <form id="orgNameForm" class="stack-form hidden">
+      <label class="fld"><span>Organization name</span><input id="orgNameInput" required></label>
+      <button type="submit" class="sm">Save name</button>
+    </form>
+    <h3>Who can clerk</h3>
+    <div id="memberList"></div>
+    <form id="addClerkForm" class="stack-form hidden">
+      <h3 style="margin:0">Add a clerk</h3>
+      <label class="fld"><span>Name</span><input id="clerkName" required></label>
+      <label class="fld"><span>Email</span><input id="clerkEmail" type="email" autocomplete="off" required></label>
+      <label class="fld"><span>Temporary password</span><input id="clerkPassword" type="text" autocomplete="off" minlength="8" required></label>
+      <button type="submit">Add clerk</button>
+      <p class="note" style="margin:0">Share that password with them. It is not shown again.</p>
+    </form>
+    <form id="inviteClerkForm" class="stack-form hidden">
+      <h3 style="margin:0">Or send an invite link</h3>
+      <label class="fld"><span>Email</span><input id="inviteEmail" type="email" autocomplete="off" required></label>
+      <button type="submit" class="ghost">Create invite link</button>
+    </form>
+    <label class="fld hidden" id="inviteUrlWrap"><span>Invite link</span><input id="inviteUrl" readonly></label>
+    <div class="actions">
+      <button type="button" class="ghost" id="peopleClose">Close</button>
+    </div>
+  </div>
 </div>
 
 <div id="printRoot" class="print-only" aria-hidden="true"></div>
@@ -213,9 +303,14 @@ label.fld > span{font-weight:600;color:var(--ink)}
   </div>
 </div>
 
+<script src="/merge.js"></script>
 <script>
 (function(){
-  var KEY='barnyard-demo-v1', S;
+  var KEY_LEGACY='barnyard-demo-v1', S;
+  var sessionUser=null, inviteToken='';
+  var lastEventJson={}, baseRev={}, syncGen={}, ackedGen={}, deletedAt={};
+  var lastCurrent=null, syncTimer=null, pullTimer=null, syncing=false, syncQueued=false;
+  var nextPullAt=0, retryDelay=1000, pendingRender=false, booting=false;
   var filterStatus='all', filterQ='';
   var dlgResolve=null, dlgMode='alert';
 
@@ -249,31 +344,65 @@ label.fld > span{font-weight:600;color:var(--ink)}
         if(b.phone==null) b.phone='';
         if(b.num==null) b.num=0;
       });
+      if(!Array.isArray(ev.lotTombstones)) ev.lotTombstones=[];
+      if(!Array.isArray(ev.buyerTombstones)) ev.buyerTombstones=[];
+      stampMissing(ev);
     });
     return raw;
   }
 
+  function stampMissing(ev, t){
+    t=t||Date.now();
+    if(!ev.metaTouchedAt) ev.metaTouchedAt=t;
+    if(!ev.orderTouchedAt) ev.orderTouchedAt=t;
+    (ev.lots||[]).forEach(function(l){
+      if(!l.touchedAt) l.touchedAt=t;
+      (l.addOns||[]).forEach(function(a){ if(a && !a.touchedAt) a.touchedAt=t; });
+    });
+    (ev.buyers||[]).forEach(function(b){ if(!b.touchedAt) b.touchedAt=t; });
+  }
+  function touch(obj){ if(obj) obj.touchedAt=Date.now(); return obj; }
+  function touchMeta(ev){ ev.metaTouchedAt=Date.now(); }
+  function touchOrder(ev){ ev.orderTouchedAt=Date.now(); }
+  function addTomb(ev, key, id){
+    if(!id) return;
+    ev[key]=ev[key]||[];
+    ev[key].push({id:id, deletedAt:Date.now()});
+    if(ev[key].length>1000) ev[key]=ev[key].slice(-1000);
+  }
+  function eventLatestTouch(ev){
+    if(!ev) return 0;
+    var t=Math.max(Number(ev.metaTouchedAt)||0, Number(ev.orderTouchedAt)||0);
+    (ev.lots||[]).forEach(function(l){
+      t=Math.max(t, Number(l.touchedAt)||0);
+      (l.addOns||[]).forEach(function(a){ t=Math.max(t, Number(a&&a.touchedAt)||0); });
+    });
+    (ev.buyers||[]).forEach(function(b){ t=Math.max(t, Number(b.touchedAt)||0); });
+    return t;
+  }
+  function blankEvent(name){
+    var t=Date.now();
+    return {id:uid('e'), name:name, feePct:0, isExample:false, metaTouchedAt:t, orderTouchedAt:t, buyers:[], lots:[], lotTombstones:[], buyerTombstones:[]};
+  }
+
   function seed(){
-    var id=uid('e');
+    var id=uid('e'), t=Date.now();
+    var b1={id:uid('buy'),num:12,name:'Hayes Feed & Seed',business:'Hayes Feed & Seed',phone:'828-555-0142',paid:true,touchedAt:t};
+    var b2={id:uid('buy'),num:27,name:'Pat Lawson',business:'',phone:'',paid:false,touchedAt:t};
     return {version:2,current:id,events:[{
       id:id,name:'Example — County Fair Small Animal Sale',feePct:0,isExample:true,
-      buyers:[
-        {id:uid('buy'),num:12,name:'Hayes Feed & Seed',business:'Hayes Feed & Seed',phone:'828-555-0142',paid:true},
-        {id:uid('buy'),num:27,name:'Pat Lawson',business:'',phone:'',paid:false}
-      ],
+      metaTouchedAt:t,orderTouchedAt:t,lotTombstones:[],buyerTombstones:[],
+      buyers:[b1,b2],
       lots:[
-        {id:uid('lot'),n:1,ex:'Maddie R.',sp:'Rabbit',de:'Pair of Mini Rex, 10 wks',buyer:'Hayes Feed & Seed',buyerId:null,price:85,addOns:[{id:uid('ao'),amount:25,note:'Support from neighbors',buyerName:'Community'}]},
-        {id:uid('lot'),n:2,ex:'Tyler B.',sp:'Hen',de:'Pen of 3 Buff Orpingtons',buyer:'',buyerId:null,price:null,addOns:[]},
-        {id:uid('lot'),n:3,ex:'Ava P.',sp:'Goat',de:'Nubian wether, 62 lb',buyer:'',buyerId:null,price:null,addOns:[]}
+        {id:uid('lot'),n:1,ex:'Maddie R.',sp:'Rabbit',de:'Pair of Mini Rex, 10 wks',buyer:'Hayes Feed & Seed',buyerId:b1.id,price:85,touchedAt:t,addOns:[{id:uid('ao'),amount:25,note:'Support from neighbors',buyerName:'Community',buyerId:null,touchedAt:t}]},
+        {id:uid('lot'),n:2,ex:'Tyler B.',sp:'Hen',de:'Pen of 3 Buff Orpingtons',buyer:'',buyerId:null,price:null,touchedAt:t,addOns:[]},
+        {id:uid('lot'),n:3,ex:'Ava P.',sp:'Goat',de:'Nubian wether, 62 lb',buyer:'',buyerId:null,price:null,touchedAt:t,addOns:[]}
       ]
     }]};
   }
 
-  function load(){
-    try{var r=localStorage.getItem(KEY); if(r){S=migrate(JSON.parse(r));}}catch(e){S=null}
-    if(!S||!S.events||!S.events.length) S=seed();
-    // link example buyers if missing buyerId on sold lots
-    S.events.forEach(function(ev){
+  function linkBuyers(state){
+    (state.events||[]).forEach(function(ev){
       (ev.lots||[]).forEach(function(l){
         if(l.price!=null && l.buyer && !l.buyerId){
           var b=(ev.buyers||[]).find(function(x){return x.name===l.buyer||x.business===l.buyer});
@@ -282,8 +411,331 @@ label.fld > span{font-weight:600;color:var(--ink)}
       });
     });
   }
-  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-  function cur(){var e=S.events.find(function(e){return e.id===S.current})||S.events[0];S.current=e.id;return e}
+  function cacheKey(){ return 'barnyard-cache-'+sessionUser.id; }
+  function resetSyncState(){
+    lastEventJson={}; baseRev={}; syncGen={}; ackedGen={}; deletedAt={};
+    lastCurrent=null; nextPullAt=0; retryDelay=1000;
+  }
+  function rememberEvents(){
+    var seen={};
+    (S.events||[]).forEach(function(ev){
+      seen[ev.id]=true;
+      lastEventJson[ev.id]=JSON.stringify(ev);
+    });
+    Object.keys(lastEventJson).forEach(function(id){ if(!seen[id]) delete lastEventJson[id]; });
+  }
+  function loadCache(){
+    try{
+      var raw=JSON.parse(localStorage.getItem(cacheKey())||'null');
+      if(!raw||!Array.isArray(raw.events)) return false;
+      var before=raw.events.map(function(ev){ return JSON.stringify(ev); });
+      S=migrate(raw);
+      if(!S) return false;
+      linkBuyers(S);
+      baseRev=(raw.sync&&raw.sync.baseRev)||{};
+      syncGen=(raw.sync&&raw.sync.syncGen)||{};
+      ackedGen=(raw.sync&&raw.sync.ackedGen)||{};
+      deletedAt=(raw.sync&&raw.sync.deletedAt)||{};
+      S.events.forEach(function(ev,i){
+        if(before[i]!==JSON.stringify(ev)) syncGen[ev.id]=(syncGen[ev.id]||0)+1;
+      });
+      rememberEvents();
+      lastCurrent=S.current;
+      return true;
+    }catch(e){ return false; }
+  }
+  function persistCache(){
+    if(!sessionUser||!S) return;
+    try{
+      localStorage.setItem(cacheKey(), JSON.stringify({
+        version:2, current:S.current, events:S.events,
+        sync:{baseRev:baseRev, syncGen:syncGen, ackedGen:ackedGen, deletedAt:deletedAt}
+      }));
+    }catch(e){}
+  }
+  function diffEvents(){
+    var changed=false, seen={};
+    (S.events||[]).forEach(function(ev){
+      seen[ev.id]=true;
+      var j=JSON.stringify(ev);
+      if(lastEventJson[ev.id]!==j){
+        lastEventJson[ev.id]=j;
+        syncGen[ev.id]=(syncGen[ev.id]||0)+1;
+        if(deletedAt[ev.id]) delete deletedAt[ev.id];
+        changed=true;
+      }
+    });
+    Object.keys(lastEventJson).forEach(function(id){
+      if(!seen[id]){
+        delete lastEventJson[id];
+        deletedAt[id]=Date.now();
+        syncGen[id]=(syncGen[id]||0)+1;
+        changed=true;
+      }
+    });
+    return changed;
+  }
+  function save(){
+    if(!S||!sessionUser) return;
+    var dataChanged=diffEvents();
+    var currentChanged=lastCurrent!==S.current;
+    lastCurrent=S.current;
+    if(!dataChanged && !currentChanged) return;
+    persistCache();
+    if(dataChanged) scheduleSync();
+  }
+  function cur(){
+    if(!S||!S.events||!S.events.length) return null;
+    var e=S.events.find(function(ev){return ev.id===S.current})||S.events[0];
+    if(!e) return null;
+    S.current=e.id;
+    return e;
+  }
+  function pickCurrent(){
+    if(!S) return;
+    if(S.current && S.events.some(function(e){return e.id===S.current})) return;
+    var list=S.events.filter(function(e){return !e.isExample});
+    if(!list.length) list=S.events.slice();
+    if(!list.length){ S.current=null; return; }
+    var best=list[0], bestT=eventLatestTouch(best);
+    list.forEach(function(ev){
+      var t=eventLatestTouch(ev);
+      if(t>=bestT){ best=ev; bestT=t; }
+    });
+    S.current=best.id;
+  }
+
+  function setSync(mode){
+    var el=$('syncState'); if(!el) return;
+    el.classList.remove('ok','wait','bad');
+    if(mode==='saving'){ el.textContent='Saving\u2026'; el.classList.add('wait'); }
+    else if(mode==='offline'){ el.textContent='Offline \u2014 saved on this device'; el.classList.add('bad'); }
+    else if(mode==='error'){ el.textContent='Not synced \u2014 will retry'; el.classList.add('bad'); }
+    else { el.textContent='Saved'; el.classList.add('ok'); }
+  }
+  function hasDirty(){
+    var ids=Object.keys(syncGen);
+    for(var i=0;i<ids.length;i++) if((syncGen[ids[i]]||0)>(ackedGen[ids[i]]||0)) return true;
+    return false;
+  }
+  function scheduleSync(ms){
+    if(!sessionUser||booting) return;
+    clearTimeout(syncTimer);
+    if(typeof navigator!=='undefined' && navigator.onLine===false) setSync('offline');
+    else if(hasDirty()) setSync('saving');
+    syncTimer=setTimeout(function(){ flushSync(); }, ms==null?400:ms);
+  }
+  function startLoops(){
+    if(pullTimer) clearInterval(pullTimer);
+    pullTimer=setInterval(function(){
+      if(sessionUser && document.visibilityState!=='hidden') flushSync({pull:true});
+    }, 8000);
+  }
+  function stopLoops(){
+    if(pullTimer) clearInterval(pullTimer);
+    pullTimer=null;
+    clearTimeout(syncTimer);
+    syncTimer=null;
+  }
+  async function api(path, opts){
+    opts=opts||{};
+    var headers={'X-Barnyard':'1'};
+    if(opts.body!==undefined) headers['Content-Type']='application/json';
+    var res;
+    try{
+      res=await fetch(path,{
+        method:opts.method||'GET',
+        headers:headers,
+        credentials:'same-origin',
+        body:opts.body!==undefined?JSON.stringify(opts.body):undefined
+      });
+    }catch(e){
+      var off=new Error('offline'); off.offline=true; throw off;
+    }
+    var data={};
+    try{ data=await res.json(); }catch(e2){ data={}; }
+    if(!res.ok){
+      var err=new Error((data&&data.error)||'Request failed');
+      err.status=res.status; err.data=data; throw err;
+    }
+    return data;
+  }
+  function findEvent(id){ return (S.events||[]).find(function(e){return e.id===id})||null; }
+  function ackClean(id){ ackedGen[id]=syncGen[id]||0; }
+  function applyCleanRemote(sale){
+    baseRev[sale.id]=sale.rev||0;
+    if(sale.deleted){
+      S.events=S.events.filter(function(e){return e.id!==sale.id});
+      delete lastEventJson[sale.id];
+      delete deletedAt[sale.id];
+      if(S.current===sale.id) S.current=null;
+      ackClean(sale.id);
+      return;
+    }
+    if(!sale.data) return;
+    var idx=S.events.findIndex(function(e){return e.id===sale.id});
+    if(idx>=0) S.events[idx]=sale.data; else S.events.push(sale.data);
+    lastEventJson[sale.id]=JSON.stringify(sale.data);
+    delete deletedAt[sale.id];
+    ackClean(sale.id);
+  }
+  function resolveAgainst(sale){
+    if(!sale) return;
+    var local=findEvent(sale.id);
+    if(sale.deleted){
+      if(!local){ baseRev[sale.id]=sale.rev||0; delete deletedAt[sale.id]; ackClean(sale.id); return; }
+      if((sale.deletedAt||0)>=eventLatestTouch(local)){
+        S.events=S.events.filter(function(e){return e.id!==sale.id});
+        delete lastEventJson[sale.id];
+        delete deletedAt[sale.id];
+        baseRev[sale.id]=sale.rev||0;
+        if(S.current===sale.id) S.current=null;
+        ackClean(sale.id);
+      } else baseRev[sale.id]=sale.rev||0;
+      return;
+    }
+    if(!sale.data){ baseRev[sale.id]=0; return; }
+    if(!local){
+      if(deletedAt[sale.id] && deletedAt[sale.id]>=eventLatestTouch(sale.data)){
+        baseRev[sale.id]=sale.rev||0;
+        return;
+      }
+      delete deletedAt[sale.id];
+      S.events.push(sale.data);
+      lastEventJson[sale.id]=JSON.stringify(sale.data);
+      baseRev[sale.id]=sale.rev||0;
+      ackClean(sale.id);
+      return;
+    }
+    var merged=(window.BarnyardMerge&&window.BarnyardMerge.mergeEvents(local, sale.data))||sale.data;
+    merged.id=sale.id;
+    S.events[S.events.indexOf(local)]=merged;
+    lastEventJson[sale.id]=JSON.stringify(merged);
+    baseRev[sale.id]=sale.rev||0;
+  }
+  function userIsEditing(){
+    var el=document.activeElement;
+    if(!el||!el.closest) return false;
+    if(el.tagName!=='INPUT'&&el.tagName!=='TEXTAREA'&&el.tagName!=='SELECT') return false;
+    return !!(el.closest('#addForm')||el.closest('#buyerForm')||el.closest('#lots')||el.closest('#feeForm')||el.closest('#dlg')||el.closest('#peopleDlg'));
+  }
+  function safeRender(){
+    if(!S) return;
+    if(userIsEditing()){ pendingRender=true; return; }
+    pendingRender=false;
+    render();
+  }
+  function collectPush(){
+    var push=[], seen={};
+    (S.events||[]).forEach(function(ev){
+      seen[ev.id]=true;
+      if((syncGen[ev.id]||0)>(ackedGen[ev.id]||0)){
+        push.push({id:ev.id, baseRev:baseRev[ev.id]||0, deleted:false, data:ev, gen:syncGen[ev.id]});
+      }
+    });
+    Object.keys(deletedAt).forEach(function(id){
+      if(seen[id]) return;
+      if((syncGen[id]||0)>(ackedGen[id]||0)){
+        push.push({id:id, baseRev:baseRev[id]||0, deleted:true, deletedAt:deletedAt[id], gen:syncGen[id]});
+      }
+    });
+    return push;
+  }
+  function applyResults(res, pushed){
+    var genById={};
+    pushed.forEach(function(p){ genById[p.id]=p.gen; });
+    (res.results||[]).forEach(function(r){
+      if(r.ok){
+        baseRev[r.id]=r.rev;
+        if((syncGen[r.id]||0)===genById[r.id]){
+          if(r.deleted){
+            delete deletedAt[r.id];
+            delete lastEventJson[r.id];
+          } else if(r.data){
+            var curEv=findEvent(r.id);
+            var j=JSON.stringify(r.data);
+            if(curEv && JSON.stringify(curEv)!==j){
+              S.events[S.events.indexOf(curEv)]=r.data;
+              lastEventJson[r.id]=j;
+            }
+          }
+          ackClean(r.id);
+        }
+      } else if(r.conflict){
+        resolveAgainst(r.sale||{id:r.id, rev:0, deleted:false, data:null});
+      }
+    });
+    (res.changes||[]).forEach(function(sale){
+      var dirty=(syncGen[sale.id]||0)>(ackedGen[sale.id]||0);
+      if(!dirty) applyCleanRemote(sale);
+      else if((baseRev[sale.id]||0)!==(sale.rev||0)) resolveAgainst(sale);
+    });
+  }
+  async function flushSync(opts){
+    if(!sessionUser||!S) return;
+    opts=opts||{};
+    if(syncing){ syncQueued=true; return; }
+    var push=collectPush();
+    var shouldPull=!!opts.pull || push.length>0 || Date.now()>=nextPullAt;
+    if(!push.length && !shouldPull){
+      if(navigator.onLine!==false && !hasDirty()) setSync('saved');
+      return;
+    }
+    if(navigator.onLine===false){
+      setSync('offline');
+      scheduleSync(Math.min(retryDelay, 5000));
+      return;
+    }
+    syncing=true;
+    if(push.length) setSync('saving');
+    try{
+      var body={
+        push:push.map(function(p){
+          return {id:p.id, baseRev:p.baseRev, deleted:!!p.deleted, deletedAt:p.deletedAt, data:p.deleted?undefined:p.data};
+        }),
+        known:Object.keys(baseRev).map(function(id){ return {id:id, rev:baseRev[id]}; })
+      };
+      var res=await api('/api/sync',{method:'POST', body:body});
+      applyResults(res, push);
+      nextPullAt=Date.now()+5000;
+      retryDelay=1000;
+      pickCurrent();
+      persistCache();
+      safeRender();
+      if(hasDirty()){ setSync('saving'); scheduleSync(300); }
+      else setSync('saved');
+    }catch(e){
+      if(e.status===401){ forceSignedOut(); return; }
+      setSync(e.offline||navigator.onLine===false?'offline':'error');
+      scheduleSync(retryDelay);
+      retryDelay=Math.min(15000, retryDelay*2);
+    }finally{
+      syncing=false;
+      if(syncQueued){ syncQueued=false; scheduleSync(50); }
+    }
+  }
+  async function initialPull(){
+    var res=await api('/api/sales');
+    var sales=res.sales||[];
+    var serverIds={};
+    sales.forEach(function(sale){ serverIds[sale.id]=true; });
+    (S.events||[]).forEach(function(ev){
+      if(!serverIds[ev.id]){
+        baseRev[ev.id]=0;
+        if((syncGen[ev.id]||0)<=(ackedGen[ev.id]||0)) syncGen[ev.id]=(ackedGen[ev.id]||0)+1;
+      }
+    });
+    sales.forEach(function(sale){
+      var dirty=(syncGen[sale.id]||0)>(ackedGen[sale.id]||0);
+      if(!dirty) applyCleanRemote(sale);
+      else if((baseRev[sale.id]||0)!==(sale.rev||0)) resolveAgainst(sale);
+    });
+    pickCurrent();
+    nextPullAt=Date.now()+5000;
+    persistCache();
+    if(S.events.length) safeRender();
+    if(hasDirty()) scheduleSync(80);
+  }
 
   function lotSale(l){return l.price==null?0:Number(l.price)||0}
   function lotAddons(l){return (l.addOns||[]).reduce(function(a,x){return a+(Number(x.amount)||0)},0)}
@@ -423,6 +875,7 @@ label.fld > span{font-weight:600;color:var(--ink)}
 
   function render(){
     var ev=cur();
+    if(!ev){ save(); return; }
     var sel=$('evt'); sel.innerHTML='';
     S.events.forEach(function(e){
       var o=document.createElement('option'); o.value=e.id; o.textContent=e.name; if(e.id===ev.id)o.selected=true; sel.appendChild(o);
@@ -524,7 +977,8 @@ label.fld > span{font-weight:600;color:var(--ink)}
   $('evt').onchange=function(e){S.current=e.target.value;render()};
   $('fFee').onchange=function(){
     var v=parseFloat($('fFee').value); if(isNaN(v)||v<0)v=0; if(v>100)v=100;
-    cur().feePct=v; $('fFee').value=v; render();
+    var evFee=cur(); if(!evFee) return;
+    evFee.feePct=v; touchMeta(evFee); $('fFee').value=v; render();
   };
   $('fStatus').onchange=function(){filterStatus=this.value;render()};
   $('fSearch').oninput=function(){filterQ=this.value;render()};
@@ -534,9 +988,9 @@ label.fld > span{font-weight:600;color:var(--ink)}
       {name:'name',label:'Event name',required:true,autofocus:true}
     ]);
     if(!res||!res.name.trim()) return;
-    var id=uid('e');
-    S.events.push({id:id,name:res.name.trim(),feePct:0,isExample:false,buyers:[],lots:[]});
-    S.current=id; render();
+    var created=blankEvent(res.name.trim());
+    S.events.push(created);
+    S.current=created.id; render();
   };
   $('renEvt').onclick=async function(){
     var ev=cur();
@@ -544,7 +998,7 @@ label.fld > span{font-weight:600;color:var(--ink)}
       {name:'name',label:'Event name',required:true,value:ev.name,autofocus:true}
     ]);
     if(!res||!res.name.trim()) return;
-    ev.name=res.name.trim(); render();
+    ev.name=res.name.trim(); touchMeta(ev); render();
   };
   $('delEvt').onclick=async function(){
     var ev=cur();
@@ -558,9 +1012,9 @@ label.fld > span{font-weight:600;color:var(--ink)}
     if(!ok) return;
     var ev=cur();
     if(S.events.length===1){
-      var id=uid('e');
-      S.events=[{id:id,name:'My Small Animal Sale',feePct:0,isExample:false,buyers:[],lots:[]}];
-      S.current=id;
+      var fresh=blankEvent('My Small Animal Sale');
+      S.events=[fresh];
+      S.current=fresh.id;
     } else {
       S.events=S.events.filter(function(e){return e.id!==ev.id});
       S.current=S.events[0].id;
@@ -569,19 +1023,20 @@ label.fld > span{font-weight:600;color:var(--ink)}
   };
 
   $('addForm').onsubmit=function(e){
-    e.preventDefault(); var ev=cur();
+    e.preventDefault(); var ev=cur(); if(!ev) return;
     var n=ev.lots.reduce(function(m,l){return Math.max(m,l.n||0)},0)+1;
-    ev.lots.push({id:uid('lot'),n:n,ex:$('fEx').value.trim(),sp:$('fSp').value.trim(),de:$('fDe').value.trim(),buyer:'',buyerId:null,price:null,addOns:[]});
+    ev.lots.push(touch({id:uid('lot'),n:n,ex:$('fEx').value.trim(),sp:$('fSp').value.trim(),de:$('fDe').value.trim(),buyer:'',buyerId:null,price:null,addOns:[]}));
+    touchOrder(ev);
     e.target.reset(); $('fEx').focus(); render();
   };
 
   $('buyerForm').onsubmit=async function(e){
-    e.preventDefault(); var ev=cur();
+    e.preventDefault(); var ev=cur(); if(!ev) return;
     var num=parseInt($('bNum').value,10);
     var name=$('bName').value.trim();
     if(!num||!name) return;
     if(ev.buyers.some(function(b){return b.num===num})){await dlgAlert('Bidder number taken','That bidder number is already registered.');return}
-    ev.buyers.push({id:uid('buy'),num:num,name:name,business:$('bBiz').value.trim(),phone:$('bPhone').value.trim(),paid:false});
+    ev.buyers.push(touch({id:uid('buy'),num:num,name:name,business:$('bBiz').value.trim(),phone:$('bPhone').value.trim(),paid:false}));
     e.target.reset(); $('bNum').focus(); renderBuyers(); save(); render();
   };
 
@@ -603,7 +1058,7 @@ label.fld > span{font-weight:600;color:var(--ink)}
     if(b){ l.buyerId=b.id; l.buyer=b.name; }
     else { l.buyerId=null; l.buyer=typed; }
     if(!l.buyer){ e.target.buyer.focus(); return; }
-    l.price=price; render();
+    l.price=price; touch(l); render();
   });
 
   $('lots').addEventListener('click',async function(e){
@@ -614,17 +1069,18 @@ label.fld > span{font-weight:600;color:var(--ink)}
     var addon=t.getAttribute('data-addon');
 
     if(undo!=null){
-      var l=ev.lots[+undo]; l.price=null; l.buyer=''; l.buyerId=null; /* keep add-ons? clear them on undo sale */ l.addOns=[]; render(); return;
+      var l=ev.lots[+undo]; l.price=null; l.buyer=''; l.buyerId=null; l.addOns=[]; touch(l); render(); return;
     }
     if(rm!=null){
       var ok=await dlgConfirm('Remove lot','Remove lot #'+ev.lots[+rm].n+'?'); if(!ok) return;
-      ev.lots.splice(+rm,1); render(); return;
+      addTomb(ev,'lotTombstones', ev.lots[+rm].id);
+      ev.lots.splice(+rm,1); touchOrder(ev); render(); return;
     }
     if(up!=null){
-      var i=+up; if(i>0){ var tmp=ev.lots[i-1]; ev.lots[i-1]=ev.lots[i]; ev.lots[i]=tmp; render(); } return;
+      var i=+up; if(i>0){ var tmp=ev.lots[i-1]; ev.lots[i-1]=ev.lots[i]; ev.lots[i]=tmp; touchOrder(ev); render(); } return;
     }
     if(down!=null){
-      var j=+down; if(j<ev.lots.length-1){ var t2=ev.lots[j+1]; ev.lots[j+1]=ev.lots[j]; ev.lots[j]=t2; render(); } return;
+      var j=+down; if(j<ev.lots.length-1){ var t2=ev.lots[j+1]; ev.lots[j+1]=ev.lots[j]; ev.lots[j]=t2; touchOrder(ev); render(); } return;
     }
     if(edit!=null){
       var lot=ev.lots[+edit];
@@ -634,7 +1090,7 @@ label.fld > span{font-weight:600;color:var(--ink)}
         {name:'de',label:'Description',value:lot.de||''}
       ]);
       if(!res) return;
-      lot.ex=res.ex.trim(); lot.sp=res.sp.trim(); lot.de=(res.de||'').trim(); render(); return;
+      lot.ex=res.ex.trim(); lot.sp=res.sp.trim(); lot.de=(res.de||'').trim(); touch(lot); render(); return;
     }
     if(addon!=null){
       var lot2=ev.lots[+addon];
@@ -647,8 +1103,8 @@ label.fld > span{font-weight:600;color:var(--ink)}
       var amt=parseFloat(res2.amount); if(isNaN(amt)||amt<=0) return;
       var from=res2.buyer.trim();
       var bb=findBuyerByNum(ev,from);
-      var entry={id:uid('ao'),amount:amt,note:(res2.note||'').trim(),buyerId:bb?bb.id:null,buyerName:bb?bb.name:from};
-      lot2.addOns=lot2.addOns||[]; lot2.addOns.push(entry); render(); return;
+      var entry=touch({id:uid('ao'),amount:amt,note:(res2.note||'').trim(),buyerId:bb?bb.id:null,buyerName:bb?bb.name:from});
+      lot2.addOns=lot2.addOns||[]; lot2.addOns.push(entry); touch(lot2); render(); return;
     }
   });
 
@@ -659,7 +1115,7 @@ label.fld > span{font-weight:600;color:var(--ink)}
     var edit=t.getAttribute('data-buyer-edit');
     var rm=t.getAttribute('data-buyer-rm');
     if(paid){
-      var b=ev.buyers.find(function(x){return x.id===paid}); if(b){b.paid=!b.paid; renderBuyers(); save()}
+      var b=ev.buyers.find(function(x){return x.id===paid}); if(b){b.paid=!b.paid; touch(b); renderBuyers(); save()}
       return;
     }
     if(edit){
@@ -674,13 +1130,14 @@ label.fld > span{font-weight:600;color:var(--ink)}
       var num=parseInt(res.num,10);
       if(ev.buyers.some(function(x){return x.id!==b2.id && x.num===num})){await dlgAlert('Bidder number taken','That number belongs to someone else.');return}
       b2.num=num; b2.name=res.name.trim(); b2.business=(res.business||'').trim(); b2.phone=(res.phone||'').trim();
-      // update lot buyer names linked to this id
-      ev.lots.forEach(function(l){if(l.buyerId===b2.id) l.buyer=b2.name});
+      touch(b2);
+      ev.lots.forEach(function(l){ if(l.buyerId===b2.id){ l.buyer=b2.name; touch(l); } });
       renderBuyers(); render(); return;
     }
     if(rm){
       var ok=await dlgConfirm('Remove buyer','Remove this buyer from the registry? Past sales keep the buyer name.');
       if(!ok) return;
+      addTomb(ev,'buyerTombstones', rm);
       ev.buyers=ev.buyers.filter(function(x){return x.id!==rm});
       renderBuyers(); render();
     }
@@ -824,7 +1281,300 @@ label.fld > span{font-weight:600;color:var(--ink)}
     }catch(err){ this.value=''; await dlgAlert('Import failed','Could not read that file.'); }
   };
 
-  load(); render();
+  function setAuthError(msg){
+    var el=$('authError');
+    el.textContent=msg||'';
+    el.classList.toggle('hidden', !msg);
+  }
+  function paintWho(){
+    if(!sessionUser) return;
+    var role=sessionUser.role==='owner'?'Owner':'Clerk';
+    $('who').textContent=sessionUser.org.name+' · '+sessionUser.name+' · '+role;
+  }
+  function showAuth(){
+    stopLoops();
+    $('appScreen').classList.add('hidden');
+    $('authScreen').classList.remove('hidden');
+    if($('lots')) $('lots').innerHTML='';
+    if($('buyers')) $('buyers').innerHTML='';
+  }
+  function forceSignedOut(){
+    sessionUser=null; S=null;
+    try{ localStorage.removeItem('barnyard-profile'); }catch(e){}
+    showAuth();
+    setAuthError('Your session ended. Sign in again.');
+  }
+  function showAuthTab(which){
+    var login=which==='login';
+    $('authTabLogin').setAttribute('aria-selected', login?'true':'false');
+    $('authTabSignup').setAttribute('aria-selected', login?'false':'true');
+    $('loginForm').classList.toggle('hidden', !login);
+    $('signupForm').classList.toggle('hidden', login);
+    $('acceptForm').classList.add('hidden');
+    $('authTabs').classList.remove('hidden');
+    setAuthError('');
+  }
+  $('authTabLogin').onclick=function(){ showAuthTab('login'); };
+  $('authTabSignup').onclick=function(){ showAuthTab('signup'); };
+  $('inviteBack').onclick=function(){
+    inviteToken='';
+    history.replaceState({}, '', '/');
+    showAuthTab('login');
+  };
+  async function prepareInvite(token){
+    try{
+      var info=await api('/api/invites/'+encodeURIComponent(token));
+      inviteToken=token;
+      $('inviteOrgShow').textContent=info.orgName;
+      $('inviteEmailShow').textContent=info.email;
+      $('authTabs').classList.add('hidden');
+      $('loginForm').classList.add('hidden');
+      $('signupForm').classList.add('hidden');
+      $('acceptForm').classList.remove('hidden');
+      setAuthError('');
+    }catch(e){
+      setAuthError(e.message||'This invite is invalid or expired.');
+    }
+  }
+  function legacyRaw(){
+    try{
+      var raw=JSON.parse(localStorage.getItem(KEY_LEGACY)||'null');
+      raw=migrate(raw);
+      if(!raw||!raw.events||!raw.events.length) return null;
+      return raw;
+    }catch(e){ return null; }
+  }
+  function refreshImportButton(){
+    var btn=$('importDevice');
+    if(!btn) return;
+    btn.classList.toggle('hidden', !legacyRaw());
+  }
+  async function takeLegacy(raw){
+    var adding=raw.events.map(function(ev){
+      ev.isExample=false;
+      if(S.events.some(function(e){return e.id===ev.id})) ev.id=uid('e');
+      return ev;
+    });
+    S.events=S.events.filter(function(e){return !e.isExample});
+    adding.forEach(function(ev){ S.events.push(ev); });
+    if(S.events.length) S.current=S.events[S.events.length-1].id;
+    try{ localStorage.removeItem(KEY_LEGACY); }catch(e){}
+    pickCurrent();
+    render();
+    refreshImportButton();
+  }
+  async function maybeOfferImport(){
+    if(localStorage.getItem('barnyard-import-choice')) return;
+    var raw=legacyRaw();
+    if(!raw) return;
+    var names=raw.events.map(function(e){return e.name}).join(', ');
+    var ok=await dlgConfirm('Import this device\'s sales?',
+      'This browser has '+raw.events.length+' sale'+(raw.events.length===1?'':'s')+' saved only on this device: '+names+'. Copy them into '+sessionUser.org.name+' so they are kept online?');
+    localStorage.setItem('barnyard-import-choice', ok?'imported':'skipped');
+    if(!ok){ refreshImportButton(); return; }
+    await takeLegacy(raw);
+  }
+  $('importDevice').onclick=async function(){
+    var raw=legacyRaw();
+    if(!raw){ await dlgAlert('Nothing to import','No sale saved on this device was found.'); refreshImportButton(); return; }
+    var ok=await dlgConfirm('Import this device\'s sales?', 'Copy '+raw.events.length+' on-device sale'+(raw.events.length===1?'':'s')+' into '+sessionUser.org.name+'?');
+    if(!ok) return;
+    localStorage.setItem('barnyard-import-choice','imported');
+    await takeLegacy(raw);
+  };
+
+  async function enterApp(offline){
+    booting=true;
+    resetSyncState();
+    $('authScreen').classList.add('hidden');
+    $('appScreen').classList.remove('hidden');
+    paintWho();
+    if(!loadCache()) S={version:2, current:null, events:[]};
+    if(S.events.length){ pickCurrent(); render(); }
+    startLoops();
+    refreshImportButton();
+    if(offline){
+      setSync('offline');
+      if(!S.events.length){ S=seed(); linkBuyers(S); pickCurrent(); render(); }
+      booting=false;
+      return;
+    }
+    try{ await initialPull(); }
+    catch(e){ setSync(e.offline?'offline':'error'); }
+    booting=false;
+    await maybeOfferImport();
+    if(!S.events.length){ S=seed(); linkBuyers(S); pickCurrent(); render(); }
+    refreshImportButton();
+    if(hasDirty()) scheduleSync(40);
+  }
+
+  function bindAuth(form, path, fields){
+    form.onsubmit=async function(e){
+      e.preventDefault();
+      setAuthError('');
+      var btn=form.querySelector('button[type=submit]');
+      btn.disabled=true;
+      try{
+        var body={};
+        fields.forEach(function(f){ body[f.key]=$(f.id).value.trim(); });
+        if(path==='/api/auth/accept-invite') body.token=inviteToken;
+        if(fields.some(function(f){return f.key==='password'})){
+          var pw=body.password;
+          body.password=$(fields.filter(function(f){return f.key==='password'})[0].id).value;
+          if(pw && !body.password) body.password=pw;
+        }
+        var me=await api(path,{method:'POST', body:body});
+        sessionUser=me.user;
+        localStorage.setItem('barnyard-profile', JSON.stringify(sessionUser));
+        if(inviteToken) history.replaceState({}, '', '/');
+        await enterApp(false);
+      }catch(err){
+        setAuthError(err.offline?'Can\'t reach the server. Check the connection and try again.':err.message);
+      }finally{ btn.disabled=false; }
+    };
+  }
+  bindAuth($('loginForm'), '/api/auth/login', [{id:'liEmail',key:'email'},{id:'liPassword',key:'password'}]);
+  bindAuth($('signupForm'), '/api/auth/signup', [{id:'suName',key:'name'},{id:'suEmail',key:'email'},{id:'suPassword',key:'password'},{id:'suOrg',key:'orgName'}]);
+  bindAuth($('acceptForm'), '/api/auth/accept-invite', [{id:'acName',key:'name'},{id:'acPassword',key:'password'}]);
+
+  $('logoutBtn').onclick=async function(){
+    try{
+      await api('/api/auth/logout',{method:'POST', body:{}});
+    }catch(e){
+      if(e.offline){
+        setSync('offline');
+        await dlgAlert('Still signed in','You are offline, so this device stays signed in. Try again when the connection is back.');
+        return;
+      }
+    }
+    sessionUser=null; S=null;
+    try{ localStorage.removeItem('barnyard-profile'); }catch(err){}
+    showAuth();
+  };
+
+  function peopleMsg(text, show){
+    $('peopleMsg').textContent=text||'';
+    $('peopleMsg').classList.toggle('hidden', !show);
+  }
+  async function refreshPeople(){
+    var data=await api('/api/org/members');
+    var box=$('memberList'); box.innerHTML='';
+    data.members.forEach(function(m){
+      var row=document.createElement('div'); row.className='member-row';
+      var label='<div><strong>'+esc(m.name)+'</strong><br><small>'+esc(m.email)+' · '+(m.role==='owner'?'Owner':'Clerk')+'</small></div>';
+      var btn='';
+      if(sessionUser.role==='owner' && m.role!=='owner'){
+        btn='<button type="button" class="danger sm" data-remove-member="'+esc(m.id)+'">Remove</button>';
+      }
+      row.innerHTML=label+btn;
+      box.appendChild(row);
+    });
+  }
+  $('peopleBtn').onclick=async function(){
+    peopleMsg('', false);
+    $('inviteUrlWrap').classList.add('hidden');
+    var owner=sessionUser.role==='owner';
+    $('orgNameForm').classList.toggle('hidden', !owner);
+    $('addClerkForm').classList.toggle('hidden', !owner);
+    $('inviteClerkForm').classList.toggle('hidden', !owner);
+    $('orgNameInput').value=sessionUser.org.name;
+    $('peopleOrg').textContent=owner?'Everyone here can open this organization\'s sales.':'Clerks can run sales. Only the owner can add or remove people.';
+    $('peopleDlg').classList.remove('hidden');
+    try{ await refreshPeople(); }
+    catch(e){ peopleMsg(e.message||'Could not load people.', true); }
+  };
+  $('peopleClose').onclick=function(){ $('peopleDlg').classList.add('hidden'); };
+  $('peopleDlg').addEventListener('click', function(e){ if(e.target===$('peopleDlg')) $('peopleDlg').classList.add('hidden'); });
+  $('orgNameForm').onsubmit=async function(e){
+    e.preventDefault();
+    try{
+      var updated=await api('/api/org',{method:'PATCH', body:{name:$('orgNameInput').value.trim()}});
+      sessionUser.org.name=updated.org.name;
+      localStorage.setItem('barnyard-profile', JSON.stringify(sessionUser));
+      paintWho();
+      peopleMsg('Organization name saved.', true);
+    }catch(err){ peopleMsg(err.message, true); }
+  };
+  $('addClerkForm').onsubmit=async function(e){
+    e.preventDefault();
+    var btn=this.querySelector('button[type=submit]'); btn.disabled=true;
+    try{
+      await api('/api/org/clerks',{method:'POST', body:{
+        name:$('clerkName').value.trim(),
+        email:$('clerkEmail').value.trim(),
+        password:$('clerkPassword').value
+      }});
+      peopleMsg('Clerk added. Share the password with them — it will not be shown again.', true);
+      this.reset();
+      await refreshPeople();
+    }catch(err){ peopleMsg(err.message, true); }
+    finally{ btn.disabled=false; }
+  };
+  $('inviteClerkForm').onsubmit=async function(e){
+    e.preventDefault();
+    try{
+      var data=await api('/api/org/invites',{method:'POST', body:{email:$('inviteEmail').value.trim()}});
+      $('inviteUrl').value=location.origin+data.path;
+      $('inviteUrlWrap').classList.remove('hidden');
+      $('inviteUrl').focus(); $('inviteUrl').select();
+      peopleMsg('Give them this link. It expires in 14 days.', true);
+      this.reset();
+    }catch(err){ peopleMsg(err.message, true); }
+  };
+  $('memberList').addEventListener('click', async function(e){
+    var id=e.target.getAttribute&&e.target.getAttribute('data-remove-member');
+    if(!id) return;
+    var ok=await dlgConfirm('Remove clerk','Remove this person from the organization? They will be signed out.');
+    if(!ok) return;
+    try{
+      await api('/api/org/members/'+encodeURIComponent(id),{method:'DELETE'});
+      await refreshPeople();
+      peopleMsg('Clerk removed.', true);
+    }catch(err){ peopleMsg(err.message, true); }
+  });
+
+  document.addEventListener('focusout', function(){
+    setTimeout(function(){ if(pendingRender && !userIsEditing()) safeRender(); }, 60);
+  });
+  window.addEventListener('online', function(){ retryDelay=1000; if(sessionUser) flushSync({pull:true}); });
+  window.addEventListener('offline', function(){ if(sessionUser) setSync('offline'); });
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='visible' && sessionUser) flushSync({pull:true});
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape' && !$('peopleDlg').classList.contains('hidden') && $('dlg').classList.contains('hidden')){
+      $('peopleDlg').classList.add('hidden');
+    }
+  });
+
+  async function boot(){
+    var invite=new URLSearchParams(location.search).get('invite');
+    try{
+      var me=await api('/api/auth/me');
+      sessionUser=me.user;
+      localStorage.setItem('barnyard-profile', JSON.stringify(sessionUser));
+      await enterApp(false);
+      return;
+    }catch(e){
+      if(e.offline){
+        var cached=null;
+        try{ cached=JSON.parse(localStorage.getItem('barnyard-profile')||'null'); }catch(err){}
+        if(cached && cached.id && !invite){
+          sessionUser=cached;
+          await enterApp(true);
+          return;
+        }
+        showAuth();
+        setAuthError(invite?'You are offline, so this invite cannot be opened right now.':'Can\'t reach the server. If you signed in on this device before, connect once and try again.');
+        return;
+      }
+    }
+    showAuth();
+    if(invite) await prepareInvite(invite);
+  }
+
+  applyTheme();
+  boot();
 })();
 </script>
 </body>

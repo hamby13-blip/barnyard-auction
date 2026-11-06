@@ -1,0 +1,6 @@
+node_modules
+.git
+screens
+.railway-bundle
+debug-*.mjs
+*.md
