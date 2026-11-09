@@ -220,6 +220,8 @@ ok('net $434.25', net==='$434.25', net);
 
 await page.click('#tabBuyers');
 await page.locator('[data-buyer-paid]').first().click();
+await waitDlgTitle(page, 'Record payment');
+await dlgFill(page, {paidAt: '2026-06-01'});
 const paidLabel = await page.locator('.buyer-row').first().locator('.paid, .unpaid').textContent();
 ok('buyer payment toggled', /Paid/.test(paidLabel), paidLabel);
 await waitSaved(page);
@@ -346,6 +348,14 @@ await page.selectOption('#fStatus','all');
 await page.click('#tabLots');
 await waitSaved(page);
 await page.screenshot({path:path.join(__dirname,'screens','main.png'), fullPage:true});
+
+await page.click('#tabPayouts');
+await page.waitForSelector('#payoutList .payout-row, #payoutList .empty');
+await page.screenshot({path:path.join(__dirname,'screens','payouts.png'), fullPage:true});
+const avgSold = await page.textContent('#tAvg');
+ok('avg sale price on board', avgSold && avgSold !== '—' && avgSold.startsWith('$'), avgSold);
+await page.locator('#tabLots').click();
+await page.screenshot({path:path.join(__dirname,'screens','sale-summary-avg.png'), fullPage:false});
 
 await page.evaluate(()=>{
   const key=Object.keys(localStorage).find(k=>k.startsWith('barnyard-cache-'));

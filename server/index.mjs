@@ -481,6 +481,20 @@ async function handleApi(req, res, pool, pathname) {
     return;
   }
 
+  if (method === 'DELETE' && pathname === '/api/org') {
+    requireOwner(user);
+    const body = await readBody(req);
+    const confirmName = requireText(body.confirmName, 'Organization name', 1, 120);
+    const org = await pool.query('SELECT id, name FROM organizations WHERE id = $1', [user.org.id]);
+    if (!org.rowCount) throw httpError(404, 'Organization not found.');
+    if (org.rows[0].name !== confirmName) {
+      throw httpError(400, 'Organization name does not match. Type it exactly to confirm deletion.');
+    }
+    await pool.query('DELETE FROM organizations WHERE id = $1', [user.org.id]);
+    send(res, 200, { ok: true }, { 'Set-Cookie': cookieHeader('', 0) });
+    return;
+  }
+
   if (method === 'POST' && pathname === '/api/org/clerks') {
     requireOwner(user);
     const body = await readBody(req);

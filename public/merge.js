@@ -91,15 +91,40 @@
       buyerTombstones.push({ id: id, deletedAt: deletedAt });
     });
 
+    var payoutMap = mergeById(local.payouts, remote.payouts, new Map());
+    var payoutList = [];
+    payoutMap.forEach(function (p) { payoutList.push(p); });
+    payoutList.sort(function (a, b) {
+      return String(a.ex || '').localeCompare(String(b.ex || '')) || String(a.id).localeCompare(String(b.id));
+    });
+
+    function pickMeta(field, fallback) {
+      var lv = local[field];
+      var rv = remote[field];
+      if (localMetaWins) {
+        if (lv !== undefined && lv !== null && lv !== '') return lv;
+        if (rv !== undefined && rv !== null && rv !== '') return rv;
+      } else {
+        if (rv !== undefined && rv !== null && rv !== '') return rv;
+        if (lv !== undefined && lv !== null && lv !== '') return lv;
+      }
+      return fallback;
+    }
+    var deadlineDays = num(pickMeta('payoutDeadlineDays', 14));
+    if (!Number.isFinite(deadlineDays) || deadlineDays < 0) deadlineDays = 14;
+
     return {
       id: local.id || remote.id,
       name: localMetaWins ? (local.name || '') : (remote.name || ''),
       feePct: localMetaWins ? num(local.feePct) : num(remote.feePct),
       isExample: !!(localMetaWins ? local.isExample : remote.isExample),
+      saleDate: pickMeta('saleDate', '') || '',
+      payoutDeadlineDays: deadlineDays,
       metaTouchedAt: Math.max(metaLocal, metaRemote),
       orderTouchedAt: Math.max(num(local.orderTouchedAt), num(remote.orderTouchedAt)),
       buyers: buyerList,
       lots: ordered,
+      payouts: payoutList,
       lotTombstones: lotTombstones,
       buyerTombstones: buyerTombstones
     };
