@@ -1,0 +1,2 @@
+-- Barnyard Auction stores lot club/weight, buyer paidAt, and exhibitor payouts in sales.data (jsonb).
+-- No relational schema changes; existing production data remains valid and is upgraded in the app migrate().

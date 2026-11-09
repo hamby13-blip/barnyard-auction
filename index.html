@@ -64,6 +64,13 @@ label.fld > span{font-weight:600;color:var(--ink)}
 .buyer-row .bn{font-weight:800;font-size:1.1rem;background:var(--ticket);color:#1d2b26;border-radius:8px;text-align:center;padding:8px 4px}
 .paid{color:var(--ok);font-weight:700;font-size:.85rem}
 .unpaid{color:var(--ribbon);font-weight:700;font-size:.85rem}
+.overdue{color:var(--ribbon);font-weight:800;font-size:.75rem;letter-spacing:.03em;text-transform:uppercase}
+.payout-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.payout-row.overdue-row{border-color:var(--ribbon);background:color-mix(in srgb,var(--ribbon) 8%,var(--surface))}
+.payout-totals{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.payout-totals div{flex:1 1 120px;background:var(--bg);border-radius:8px;padding:8px 10px}
+.payout-totals b{display:block;font-size:1.1rem}
+.danger-zone{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 .dlg-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:1000}
 .dlg{background:var(--surface);color:var(--ink);border-radius:14px;padding:18px;max-width:420px;width:100%;border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.25)}
@@ -149,8 +156,11 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <div><b id="tGross">$0</b><span>Gross sales</span></div>
       <div><b id="tAddons">$0</b><span>Add-ons / support</span></div>
       <div><b id="tFee">$0</b><span>Sale fee</span></div>
-      <div><b id="tNet">$0</b><span>Net to exhibitors</span></div>
+      <div><b id="tAvg">$0</b><span>Avg sale (sold)</span></div>
+      <div class="hidden" id="tAvgLbWrap"><b id="tAvgLb">$0</b><span>Avg $/lb (sold)</span></div>
+      <div><b id="tNet">$0</b><span>Net owed exhibitors</span></div>
     </div>
+    <p id="boardPayoutNote" class="note" style="margin:10px 0 0;color:#b9c4bd;font-size:.82rem">Exhibitor payouts are tracked separately — money is often picked up days after the sale.</p>
   </header>
 
   <div class="accountbar">
@@ -179,6 +189,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   <div class="tabs" role="tablist" aria-label="Sections">
     <button type="button" role="tab" id="tabLots" aria-selected="true" aria-controls="secLots">Lots</button>
     <button type="button" role="tab" id="tabBuyers" aria-selected="false" aria-controls="secBuyers">Buyers</button>
+    <button type="button" role="tab" id="tabPayouts" aria-selected="false" aria-controls="secPayouts">Payouts</button>
     <button type="button" role="tab" id="tabReports" aria-selected="false" aria-controls="secReports">Reports &amp; backup</button>
   </div>
 
@@ -189,7 +200,13 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
         <label class="fld"><span>Commission / sale fee %</span>
           <input id="fFee" type="number" min="0" max="100" step="0.01" value="0" aria-describedby="feeHint">
         </label>
-        <p id="feeHint" class="note" style="margin:0;align-self:end">Applied to sale price only (not add-ons). Net = sale − fee + add-ons.</p>
+        <label class="fld"><span>Sale date</span>
+          <input id="fSaleDate" type="date" aria-describedby="feeHint">
+        </label>
+        <label class="fld"><span>Payout pickup deadline (days)</span>
+          <input id="fPayoutDays" type="number" min="0" max="120" step="1" value="14">
+        </label>
+        <p id="feeHint" class="note full" style="margin:0">Applied to sale price only (not add-ons). Net = sale − fee + add-ons. Payouts due by sale date + deadline days.</p>
       </form>
     </div>
 
@@ -198,6 +215,8 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <form class="add" id="addForm">
         <label class="fld"><span>Exhibitor</span><input id="fEx" name="ex" required autocomplete="name"></label>
         <label class="fld"><span>Species</span><input id="fSp" name="sp" required placeholder="rabbit, hen, goat…"></label>
+        <label class="fld"><span>Club / chapter (optional)</span><input id="fClub" name="club" placeholder="North Wilkes 4-H"></label>
+        <label class="fld"><span>Weight (lbs, optional)</span><input id="fWt" name="weight" type="number" min="0" step="0.1" placeholder="Live weight"></label>
         <label class="fld full"><span>Description</span><input id="fDe" name="de" placeholder="breed, weight, pen of 3…"></label>
         <button type="submit" class="full">Add lot</button>
       </form>
@@ -217,6 +236,24 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     </div>
 
     <div class="lots" id="lots" aria-live="polite"></div>
+  </section>
+
+  <section id="secPayouts" role="tabpanel" aria-labelledby="tabPayouts" class="hidden">
+    <div class="panel">
+      <h2>Exhibitor payouts</h2>
+      <p id="payoutDeadlineLine" class="note" style="margin-top:0"></p>
+      <div class="payout-totals" id="payoutTotals" aria-live="polite"></div>
+      <div class="bar" style="margin:0 0 12px">
+        <button type="button" id="printPayouts">Print payout list</button>
+        <button type="button" class="ghost" id="exportPayouts">Export CSV</button>
+      </div>
+      <div id="payoutList"></div>
+    </div>
+    <div class="panel">
+      <h2>Buyer balances</h2>
+      <p class="note" style="margin-top:0">Outstanding buyer payments (sale day charges, not exhibitor payouts).</p>
+      <div id="buyerBalanceList"></div>
+    </div>
   </section>
 
   <section id="secBuyers" role="tabpanel" aria-labelledby="tabBuyers" class="hidden">
@@ -283,6 +320,11 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <button type="submit" class="ghost">Create invite link</button>
     </form>
     <label class="fld hidden" id="inviteUrlWrap"><span>Invite link</span><input id="inviteUrl" readonly></label>
+    <div id="deleteAccountZone" class="danger-zone hidden">
+      <h3 style="margin:0 0 6px;color:var(--ribbon)">Delete organization</h3>
+      <p class="note" style="margin:0 0 8px">Permanently delete <strong id="deleteOrgLabel"></strong>, all sales, buyers, and payouts. This cannot be undone.</p>
+      <button type="button" class="danger sm" id="deleteAccountBtn">Delete account…</button>
+    </div>
     <div class="actions">
       <button type="button" class="ghost" id="peopleClose">Close</button>
     </div>
@@ -326,23 +368,35 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       if(typeof ev.feePct!=='number') ev.feePct=0;
       if(!Array.isArray(ev.buyers)) ev.buyers=[];
       if(typeof ev.isExample!=='boolean'){
-        ev.isExample=!!(ev.lots&&ev.lots.length&&ev.lots.some(function(l){
-          return l.ex==='Maddie R.'||l.ex==='Tyler B.'||l.ex==='Ava P.';
-        }) && /county fair|example|demo|sample/i.test(ev.name||''));
+        ev.isExample=!!(ev.lots&&ev.lots.length&&/wilkes county youth|county fair|example|demo|sample/i.test(ev.name||''));
       }
+      if(typeof ev.saleDate!=='string') ev.saleDate='';
+      var pd=Number(ev.payoutDeadlineDays);
+      if(!Number.isFinite(pd)||pd<0) ev.payoutDeadlineDays=14;
+      if(!Array.isArray(ev.payouts)) ev.payouts=[];
       (ev.lots||[]).forEach(function(l){
         if(!l.id) l.id=uid('lot');
         if(!Array.isArray(l.addOns)) l.addOns=[];
         if(l.buyerId===undefined) l.buyerId=null;
         if(l.price===undefined) l.price=null;
         if(l.buyer==null) l.buyer='';
+        if(l.club==null) l.club='';
+        if(l.weight!=null && l.weight!==''){ var w=Number(l.weight); l.weight=Number.isFinite(w)&&w>0?w:null; } else l.weight=null;
       });
       ev.buyers.forEach(function(b){
         if(!b.id) b.id=uid('buy');
         if(typeof b.paid!=='boolean') b.paid=false;
+        if(b.paidAt==null) b.paidAt=b.paid?null:null;
         if(b.business==null) b.business='';
         if(b.phone==null) b.phone='';
         if(b.num==null) b.num=0;
+      });
+      (ev.payouts||[]).forEach(function(p){
+        if(!p.id) p.id=uid('pay');
+        if(p.status!=='picked_up'&&p.status!=='owed') p.status='owed';
+        if(p.pickupDate==null) p.pickupDate='';
+        if(p.pickupDetail==null) p.pickupDetail='';
+        if(p.note==null) p.note='';
       });
       if(!Array.isArray(ev.lotTombstones)) ev.lotTombstones=[];
       if(!Array.isArray(ev.buyerTombstones)) ev.buyerTombstones=[];
@@ -378,26 +432,73 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       (l.addOns||[]).forEach(function(a){ t=Math.max(t, Number(a&&a.touchedAt)||0); });
     });
     (ev.buyers||[]).forEach(function(b){ t=Math.max(t, Number(b.touchedAt)||0); });
+    (ev.payouts||[]).forEach(function(p){ t=Math.max(t, Number(p.touchedAt)||0); });
     return t;
   }
   function blankEvent(name){
     var t=Date.now();
-    return {id:uid('e'), name:name, feePct:0, isExample:false, metaTouchedAt:t, orderTouchedAt:t, buyers:[], lots:[], lotTombstones:[], buyerTombstones:[]};
+    return {id:uid('e'), name:name, feePct:0, isExample:false, saleDate:'', payoutDeadlineDays:14,
+      metaTouchedAt:t, orderTouchedAt:t, buyers:[], lots:[], payouts:[], lotTombstones:[], buyerTombstones:[]};
   }
 
   function seed(){
     var id=uid('e'), t=Date.now();
-    var b1={id:uid('buy'),num:12,name:'Hayes Feed & Seed',business:'Hayes Feed & Seed',phone:'828-555-0142',paid:true,touchedAt:t};
-    var b2={id:uid('buy'),num:27,name:'Pat Lawson',business:'',phone:'',paid:false,touchedAt:t};
+    var saleDate=new Date(t-20*86400000).toISOString().slice(0,10);
+    var clubs=['North Wilkes 4-H','West Wilkes FFA','Millers Creek 4-H','Roaring River 4-H','Wilkes Central FFA'];
+    var specs=[
+      {sp:'Rabbit',de:'Pair of Mini Rex, 10 wks',wt:null},
+      {sp:'Rabbit',de:'Holland Lop buck',wt:4.2},
+      {sp:'Hen',de:'Pen of 3 Buff Orpingtons',wt:null},
+      {sp:'Hen',de:'Rhode Island Red pullet',wt:5.5},
+      {sp:'Goat',de:'Nubian wether',wt:62},
+      {sp:'Goat',de:'Boer market wether',wt:78},
+      {sp:'Sheep',de:'Hampshire market lamb',wt:118},
+      {sp:'Sheep',de:'Dorset ewe lamb',wt:95},
+      {sp:'Pig',de:'Yorkshire barrow',wt:245},
+      {sp:'Steer',de:'Angus steer',wt:1120}
+    ];
+    var exNames=['Maddie R.','Tyler B.','Ava P.','Jordan K.','Sam H.','Casey M.','Riley T.','Alex K.','Drew L.','Emma S.','Noah C.','Lily W.','Ethan D.','Grace F.','Hannah M.'];
+    var buyerDefs=[
+      {num:3,name:'Hayes Feed & Seed',business:'Hayes Feed & Seed',phone:'828-555-0142',paid:true,paidAt:saleDate},
+      {num:7,name:'Pat Lawson',business:'',phone:'828-555-0199',paid:false,paidAt:''},
+      {num:12,name:'Mountain View Farms',business:'Mountain View Farms LLC',phone:'828-555-0100',paid:true,paidAt:saleDate},
+      {num:15,name:'Hometown Bank',business:'Hometown Bank',phone:'',paid:false,paidAt:''},
+      {num:18,name:'Wilkes Co-op',business:'Wilkes Farmers Co-op',phone:'828-555-0177',paid:true,paidAt:''},
+      {num:22,name:'Jordan Lee',business:'',phone:'',paid:false,paidAt:''},
+      {num:31,name:'Carolina Meats',business:'Carolina Meats Inc',phone:'828-555-0133',paid:false,paidAt:''},
+      {num:36,name:'First Baptist BBQ',business:'',phone:'',paid:true,paidAt:saleDate},
+      {num:41,name:'Lee Family',business:'',phone:'828-555-0188',paid:false,paidAt:''},
+      {num:44,name:'Tractor Town',business:'Tractor Town',phone:'',paid:true,paidAt:''},
+      {num:52,name:'Community Support',business:'',phone:'',paid:true,paidAt:''}
+    ];
+    var buyers=buyerDefs.map(function(b){
+      return touch({id:uid('buy'),num:b.num,name:b.name,business:b.business,phone:b.phone,paid:!!b.paid,paidAt:b.paidAt||''});
+    });
+    var lots=[], sold=0, bi=0;
+    for(var n=1;n<=24;n++){
+      var spec=specs[(n-1)%specs.length];
+      var ex=exNames[(n-1)%exNames.length];
+      var club=clubs[(n-1)%clubs.length];
+      var soldThis=n<=19;
+      var b=soldThis?buyers[bi%buyers.length]:null;
+      if(soldThis) bi++;
+      var price=soldThis?(40+((n*17)%90)+(spec.wt?Math.round(spec.wt/8):0)):null;
+      var lot=touch({id:uid('lot'),n:n,ex:ex,sp:spec.sp,de:spec.de,club:club,weight:spec.wt,
+        buyer:soldThis?(b?b.name:''):'',buyerId:soldThis&&b?b.id:null,price:price,addOns:[]});
+      if(n===1) lot.addOns=[touch({id:uid('ao'),amount:25,note:'Support from neighbors',buyerName:'Community Support',buyerId:buyers[10].id,touchedAt:t})];
+      lots.push(lot);
+      if(soldThis) sold++;
+    }
+    var payouts=[
+      touch({id:uid('pay'),ex:'Maddie R.',status:'picked_up',pickupDate:saleDate,pickupDetail:'Mom — check #1042',note:''}),
+      touch({id:uid('pay'),ex:'Tyler B.',status:'picked_up',pickupDate:new Date(t-86400000*15).toISOString().slice(0,10),pickupDetail:'Dad',note:''}),
+      touch({id:uid('pay'),ex:'Ava P.',status:'owed',pickupDate:'',pickupDetail:'',note:'Traveling — will pick up next week'}),
+      touch({id:uid('pay'),ex:'Jordan K.',status:'owed',pickupDate:'',pickupDetail:'',note:''}),
+      touch({id:uid('pay'),ex:'Sam H.',status:'picked_up',pickupDate:new Date(t-86400000*12).toISOString().slice(0,10),pickupDetail:'Exhibitor',note:''})
+    ];
     return {version:2,current:id,events:[{
-      id:id,name:'Example — County Fair Small Animal Sale',feePct:0,isExample:true,
-      metaTouchedAt:t,orderTouchedAt:t,lotTombstones:[],buyerTombstones:[],
-      buyers:[b1,b2],
-      lots:[
-        {id:uid('lot'),n:1,ex:'Maddie R.',sp:'Rabbit',de:'Pair of Mini Rex, 10 wks',buyer:'Hayes Feed & Seed',buyerId:b1.id,price:85,touchedAt:t,addOns:[{id:uid('ao'),amount:25,note:'Support from neighbors',buyerName:'Community',buyerId:null,touchedAt:t}]},
-        {id:uid('lot'),n:2,ex:'Tyler B.',sp:'Hen',de:'Pen of 3 Buff Orpingtons',buyer:'',buyerId:null,price:null,touchedAt:t,addOns:[]},
-        {id:uid('lot'),n:3,ex:'Ava P.',sp:'Goat',de:'Nubian wether, 62 lb',buyer:'',buyerId:null,price:null,touchedAt:t,addOns:[]}
-      ]
+      id:id,name:'Demo — Wilkes County Youth Livestock Sale',feePct:5,isExample:true,saleDate:saleDate,payoutDeadlineDays:14,
+      metaTouchedAt:t,orderTouchedAt:t,lotTombstones:[],buyerTombstones:[],buyers:buyers,lots:lots,payouts:payouts
     }]};
   }
 
@@ -617,7 +718,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     var el=document.activeElement;
     if(!el||!el.closest) return false;
     if(el.tagName!=='INPUT'&&el.tagName!=='TEXTAREA'&&el.tagName!=='SELECT') return false;
-    return !!(el.closest('#addForm')||el.closest('#buyerForm')||el.closest('#lots')||el.closest('#feeForm')||el.closest('#dlg')||el.closest('#peopleDlg'));
+    return !!(el.closest('#addForm')||el.closest('#buyerForm')||el.closest('#lots')||el.closest('#feeForm')||el.closest('#dlg')||el.closest('#peopleDlg')||el.closest('#secPayouts'));
   }
   function safeRender(){
     if(!S) return;
@@ -743,6 +844,59 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   function lotNet(l,pct){return lotSale(l)-lotFee(l,pct)+lotAddons(l)}
   function buyerLabel(b){return '#'+b.num+' '+b.name+(b.business?' ('+b.business+')':'')}
 
+  function exhibitorNet(ev,ex){
+    var gross=0,fee=0,add=0;
+    (ev.lots||[]).forEach(function(l){
+      if(l.price==null||l.ex!==ex) return;
+      gross+=lotSale(l); fee+=lotFee(l,ev.feePct); add+=lotAddons(l);
+    });
+    return gross-fee+add;
+  }
+  function exhibitorsWithSales(ev){
+    var seen={}, out=[];
+    (ev.lots||[]).forEach(function(l){
+      if(l.price==null||!l.ex) return;
+      if(!seen[l.ex]){ seen[l.ex]=true; out.push(l.ex); }
+    });
+    return out.sort();
+  }
+  function findPayout(ev,ex){
+    return (ev.payouts||[]).find(function(p){return p.ex===ex})||null;
+  }
+  function ensurePayout(ev,ex){
+    var p=findPayout(ev,ex);
+    if(p) return p;
+    p=touch({id:uid('pay'),ex:ex,status:'owed',pickupDate:'',pickupDetail:'',note:''});
+    ev.payouts=ev.payouts||[]; ev.payouts.push(p);
+    return p;
+  }
+  function payoutDeadlineDate(ev){
+    var days=Number(ev.payoutDeadlineDays);
+    if(!Number.isFinite(days)||days<0) days=14;
+    var base=ev.saleDate?new Date(ev.saleDate+'T12:00:00'):new Date(ev.metaTouchedAt||Date.now());
+    if(isNaN(base.getTime())) base=new Date();
+    var d=new Date(base.getTime());
+    d.setDate(d.getDate()+days);
+    return d;
+  }
+  function formatDateISO(d){
+    if(!d) return '';
+    if(typeof d==='string') return d.slice(0,10);
+    return d.toISOString().slice(0,10);
+  }
+  function payoutSummary(ev){
+    var totalOwed=0, paidOut=0, outstanding=0;
+    exhibitorsWithSales(ev).forEach(function(ex){
+      var amt=exhibitorNet(ev,ex);
+      if(amt<=0) return;
+      totalOwed+=amt;
+      var p=findPayout(ev,ex);
+      var st=p&&p.status==='picked_up'?'picked_up':'owed';
+      if(st==='picked_up') paidOut+=amt; else outstanding+=amt;
+    });
+    return {totalOwed:totalOwed,paidOut:paidOut,outstanding:outstanding,deadline:payoutDeadlineDate(ev)};
+  }
+
   function findBuyerByNum(ev,num){
     num=String(num).trim();
     if(!num) return null;
@@ -838,14 +992,16 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 
   /* ---------- tabs ---------- */
   function showTab(name){
-    ['Lots','Buyers','Reports'].forEach(function(n){
+    ['Lots','Buyers','Payouts','Reports'].forEach(function(n){
       var on=n===name;
       $('tab'+n).setAttribute('aria-selected',on?'true':'false');
       $('sec'+n).classList.toggle('hidden',!on);
     });
+    if(name==='Payouts') renderPayouts();
   }
   $('tabLots').onclick=function(){showTab('Lots')};
   $('tabBuyers').onclick=function(){showTab('Buyers');renderBuyers()};
+  $('tabPayouts').onclick=function(){showTab('Payouts')};
   $('tabReports').onclick=function(){showTab('Reports')};
 
   /* ---------- render ---------- */
@@ -855,7 +1011,9 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     var add=ev.lots.reduce(function(a,l){return a+lotAddons(l)},0);
     var fee=sold.reduce(function(a,l){return a+lotFee(l,ev.feePct)},0);
     var net=gross-fee+add;
-    return {sold:sold.length,gross:gross,add:add,fee:fee,net:net,avg:sold.length?gross/sold.length:0};
+    var wt=0;
+    sold.forEach(function(l){ var w=Number(l.weight); if(Number.isFinite(w)&&w>0) wt+=w; });
+    return {sold:sold.length,gross:gross,add:add,fee:fee,net:net,avg:sold.length?gross/sold.length:0,totalWeight:wt,avgLb:wt>0?gross/wt:0};
   }
 
   function firstUnsoldIndex(lots){
@@ -869,7 +1027,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       if(filterStatus==='sold' && x.l.price==null) return false;
       if(filterStatus==='unsold' && x.l.price!=null) return false;
       if(!q) return true;
-      return (x.l.ex||'').toLowerCase().indexOf(q)>=0 || (x.l.sp||'').toLowerCase().indexOf(q)>=0 || (x.l.de||'').toLowerCase().indexOf(q)>=0;
+      return (x.l.ex||'').toLowerCase().indexOf(q)>=0 || (x.l.sp||'').toLowerCase().indexOf(q)>=0 || (x.l.de||'').toLowerCase().indexOf(q)>=0 || (x.l.club||'').toLowerCase().indexOf(q)>=0;
     });
   }
 
@@ -882,6 +1040,8 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     });
     $('evtline').textContent=ev.name+(ev.feePct?(' · '+ev.feePct+'% fee'):'');
     $('fFee').value=ev.feePct||0;
+    $('fSaleDate').value=ev.saleDate||'';
+    $('fPayoutDays').value=ev.payoutDeadlineDays!=null?ev.payoutDeadlineDays:14;
     $('exampleBanner').classList.toggle('hidden',!ev.isExample);
 
     var t=totals(ev);
@@ -890,6 +1050,10 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     $('tGross').textContent=money(t.gross);
     $('tAddons').textContent=money(t.add);
     $('tFee').textContent=money(t.fee);
+    $('tAvg').textContent=t.sold?money(t.avg):'—';
+    var lbWrap=$('tAvgLbWrap');
+    if(t.totalWeight>0){ lbWrap.classList.remove('hidden'); $('tAvgLb').textContent=money(t.avgLb)+'/lb'; }
+    else { lbWrap.classList.add('hidden'); }
     $('tNet').textContent=money(t.net);
 
     var nextIdx=firstUnsoldIndex(ev.lots);
@@ -905,7 +1069,10 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       d.setAttribute('data-idx',i);
 
       var nextBadge=i===nextIdx?' <span class="badge">Next up</span>':'';
-      var info='<div><h3>'+esc(l.sp)+' &middot; '+esc(l.ex)+nextBadge+'</h3><small>'+esc(l.de||'No description')+'</small>';
+      var meta=[];
+      if(l.club) meta.push(esc(l.club));
+      if(l.weight!=null&&Number(l.weight)>0) meta.push(Number(l.weight)+' lb');
+      var info='<div><h3>'+esc(l.sp)+' &middot; '+esc(l.ex)+nextBadge+'</h3><small>'+esc(l.de||'No description')+(meta.length?' · '+meta.join(' · '):'')+'</small>';
       var ao=lotAddons(l);
       if(l.price!=null){
         info+='<div class="addons">Sale '+money(l.price);
@@ -945,6 +1112,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     });
     save();
     if(!$('secBuyers').classList.contains('hidden')) renderBuyers();
+    if(!$('secPayouts').classList.contains('hidden')) renderPayouts();
   }
 
   function renderBuyers(){
@@ -964,7 +1132,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       row.innerHTML='<div class="bn">'+esc(String(b.num))+'</div>'+
         '<div><strong>'+esc(b.name)+'</strong>'+(b.business?'<br><small>'+esc(b.business)+'</small>':'')+
         (b.phone?'<br><small>'+esc(b.phone)+'</small>':'')+
-        '<br><small>Due '+money(due)+'</small> · <span class="'+(b.paid?'paid':'unpaid')+'">'+(b.paid?'Paid':'Unpaid')+'</span></div>'+
+        '<br><small>Due '+money(due)+'</small> · <span class="'+(b.paid?'paid':'unpaid')+'">'+(b.paid?'Paid'+(b.paidAt?' '+esc(b.paidAt):''):'Unpaid')+'</span></div>'+
         '<div style="display:flex;flex-direction:column;gap:4px">'+
         '<button type="button" class="ghost sm" data-buyer-paid="'+esc(b.id)+'">'+(b.paid?'Mark unpaid':'Mark paid')+'</button>'+
         '<button type="button" class="ghost sm" data-buyer-edit="'+esc(b.id)+'">Edit</button>'+
@@ -973,12 +1141,72 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     });
   }
 
+  function renderPayouts(){
+    var ev=cur(); if(!ev) return;
+    var sum=payoutSummary(ev);
+    var dl=formatDateISO(sum.deadline);
+    $('payoutDeadlineLine').textContent=ev.saleDate
+      ?('Pickup deadline: '+dl+(sum.outstanding>0&&Date.now()>sum.deadline.getTime()?' (some payouts are overdue)':''))
+      :('Set a sale date under Event settings to track payout deadlines. Default deadline is '+ev.payoutDeadlineDays+' days after the sale.');
+    var tot=$('payoutTotals');
+    tot.innerHTML='<div><b>'+money(sum.totalOwed)+'</b><span class="note">Total net to exhibitors</span></div>'+
+      '<div><b>'+money(sum.paidOut)+'</b><span class="note">Picked up</span></div>'+
+      '<div><b>'+money(sum.outstanding)+'</b><span class="note">Still outstanding</span></div>';
+    var list=$('payoutList'); list.innerHTML='';
+    var names=exhibitorsWithSales(ev);
+    if(!names.length){ list.innerHTML='<div class="empty">No sold lots yet — exhibitor payouts appear here.</div>'; }
+    else {
+      var now=Date.now();
+      names.forEach(function(ex){
+        var amt=exhibitorNet(ev,ex);
+        var p=ensurePayout(ev,ex);
+        var picked=p.status==='picked_up';
+        var overdue=!picked&&ev.saleDate&&now>sum.deadline.getTime();
+        var row=document.createElement('div');
+        row.className='payout-row'+(overdue?' overdue-row':'');
+        row.innerHTML='<div><strong>'+esc(ex)+'</strong> · Net '+money(amt)+
+          '<br><span class="'+(picked?'paid':'unpaid')+'">'+(picked?'Picked up':'Owed')+'</span>'+
+          (picked&&p.pickupDate?' · '+esc(p.pickupDate):'')+
+          (picked&&p.pickupDetail?' · '+esc(p.pickupDetail):'')+
+          (p.note?'<br><small>'+esc(p.note)+'</small>':'')+
+          (overdue?' <span class="overdue">Overdue</span>':'')+
+          '</div><div style="display:flex;flex-direction:column;gap:4px">'+
+          '<button type="button" class="ghost sm" data-payout-edit="'+esc(p.id)+'">'+(picked?'Edit pickup':'Record pickup')+'</button>'+
+          (picked?'<button type="button" class="ghost sm" data-payout-unpick="'+esc(p.id)+'">Mark owed again</button>':'')+
+          '</div>';
+        list.appendChild(row);
+      });
+    }
+    var bal=$('buyerBalanceList'); bal.innerHTML='';
+    var unpaid=[];
+    (ev.buyers||[]).forEach(function(b){
+      var d=buyerDue(ev,b);
+      if(d.total>0 && !b.paid) unpaid.push({b:b,d:d});
+    });
+    if(!unpaid.length) bal.innerHTML='<div class="empty">All registered buyers with a balance are marked paid.</div>';
+    else unpaid.forEach(function(x){
+      var row=document.createElement('div'); row.className='buyer-row';
+      row.innerHTML='<div class="bn">'+esc(String(x.b.num))+'</div><div><strong>'+esc(x.b.name)+'</strong><br><small>Balance '+money(x.d.total)+' · Unpaid</small></div><div></div>';
+      bal.appendChild(row);
+    });
+    save();
+  }
+
   /* ---------- events ---------- */
   $('evt').onchange=function(e){S.current=e.target.value;render()};
   $('fFee').onchange=function(){
     var v=parseFloat($('fFee').value); if(isNaN(v)||v<0)v=0; if(v>100)v=100;
     var evFee=cur(); if(!evFee) return;
     evFee.feePct=v; touchMeta(evFee); $('fFee').value=v; render();
+  };
+  $('fSaleDate').onchange=function(){
+    var ev=cur(); if(!ev) return;
+    ev.saleDate=$('fSaleDate').value||''; touchMeta(ev); render();
+  };
+  $('fPayoutDays').onchange=function(){
+    var ev=cur(); if(!ev) return;
+    var v=parseInt($('fPayoutDays').value,10); if(isNaN(v)||v<0)v=14; if(v>120)v=120;
+    ev.payoutDeadlineDays=v; touchMeta(ev); $('fPayoutDays').value=v; render();
   };
   $('fStatus').onchange=function(){filterStatus=this.value;render()};
   $('fSearch').oninput=function(){filterQ=this.value;render()};
@@ -1025,7 +1253,10 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   $('addForm').onsubmit=function(e){
     e.preventDefault(); var ev=cur(); if(!ev) return;
     var n=ev.lots.reduce(function(m,l){return Math.max(m,l.n||0)},0)+1;
-    ev.lots.push(touch({id:uid('lot'),n:n,ex:$('fEx').value.trim(),sp:$('fSp').value.trim(),de:$('fDe').value.trim(),buyer:'',buyerId:null,price:null,addOns:[]}));
+    var wt=parseFloat($('fWt').value);
+    if(isNaN(wt)||wt<=0) wt=null;
+    ev.lots.push(touch({id:uid('lot'),n:n,ex:$('fEx').value.trim(),sp:$('fSp').value.trim(),de:$('fDe').value.trim(),
+      club:$('fClub').value.trim(),weight:wt,buyer:'',buyerId:null,price:null,addOns:[]}));
     touchOrder(ev);
     e.target.reset(); $('fEx').focus(); render();
   };
@@ -1087,10 +1318,15 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var res=await dlgPrompt('Edit lot','',[
         {name:'ex',label:'Exhibitor',required:true,value:lot.ex,autofocus:true},
         {name:'sp',label:'Species',required:true,value:lot.sp},
+        {name:'club',label:'Club / chapter',value:lot.club||''},
+        {name:'weight',label:'Weight (lbs)',type:'number',min:'0',step:'0.1',value:lot.weight!=null?lot.weight:''},
         {name:'de',label:'Description',value:lot.de||''}
       ]);
       if(!res) return;
-      lot.ex=res.ex.trim(); lot.sp=res.sp.trim(); lot.de=(res.de||'').trim(); touch(lot); render(); return;
+      lot.ex=res.ex.trim(); lot.sp=res.sp.trim(); lot.de=(res.de||'').trim();
+      lot.club=(res.club||'').trim();
+      var w=parseFloat(res.weight); lot.weight=!isNaN(w)&&w>0?w:null;
+      touch(lot); render(); return;
     }
     if(addon!=null){
       var lot2=ev.lots[+addon];
@@ -1108,6 +1344,30 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     }
   });
 
+  $('payoutList').addEventListener('click',async function(e){
+    var t=e.target; if(t.tagName!=='BUTTON') return;
+    var ev=cur(); if(!ev) return;
+    var edit=t.getAttribute('data-payout-edit');
+    var unpick=t.getAttribute('data-payout-unpick');
+    if(edit){
+      var p=(ev.payouts||[]).find(function(x){return x.id===edit}); if(!p) return;
+      var res=await dlgPrompt('Exhibitor payout','Net amount is calculated from sold lots.',[
+        {name:'pickupDate',label:'Pickup date',type:'date',value:p.pickupDate||new Date().toISOString().slice(0,10),required:true,autofocus:true},
+        {name:'pickupDetail',label:'Who picked up / check #',value:p.pickupDetail||''},
+        {name:'note',label:'Note (optional)',value:p.note||'',type:'textarea'}
+      ]);
+      if(!res) return;
+      p.status='picked_up'; p.pickupDate=res.pickupDate||''; p.pickupDetail=(res.pickupDetail||'').trim();
+      p.note=(res.note||'').trim(); touch(p); renderPayouts(); render(); return;
+    }
+    if(unpick){
+      var p2=(ev.payouts||[]).find(function(x){return x.id===unpick}); if(!p2) return;
+      var ok=await dlgConfirm('Mark owed again','Put this payout back on the outstanding list?');
+      if(!ok) return;
+      p2.status='owed'; p2.pickupDate=''; p2.pickupDetail=''; touch(p2); renderPayouts(); render();
+    }
+  });
+
   $('buyers').addEventListener('click',async function(e){
     var t=e.target; if(t.tagName!=='BUTTON') return;
     var ev=cur();
@@ -1115,7 +1375,19 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     var edit=t.getAttribute('data-buyer-edit');
     var rm=t.getAttribute('data-buyer-rm');
     if(paid){
-      var b=ev.buyers.find(function(x){return x.id===paid}); if(b){b.paid=!b.paid; touch(b); renderBuyers(); save()}
+      var b=ev.buyers.find(function(x){return x.id===paid});
+      if(b){
+        if(!b.paid){
+          var res=await dlgPrompt('Record payment','',[
+            {name:'paidAt',label:'Paid date',type:'date',value:new Date().toISOString().slice(0,10),autofocus:true}
+          ]);
+          if(!res) return;
+          b.paid=true; b.paidAt=res.paidAt||new Date().toISOString().slice(0,10);
+        } else {
+          b.paid=false; b.paidAt='';
+        }
+        touch(b); renderBuyers(); render(); save();
+      }
       return;
     }
     if(edit){
@@ -1213,10 +1485,16 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var rows=lots.map(function(l){
         var s=lotSale(l), f=lotFee(l,ev.feePct), a=lotAddons(l);
         gross+=s; fee+=f; add+=a;
-        return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.sp)+(l.de?' — '+esc(l.de):'')+'</td><td>'+money(s)+'</td><td>'+money(a)+'</td><td>'+money(f)+'</td><td>'+money(lotNet(l,ev.feePct))+'</td></tr>';
+        var clubWt=(l.club?' · '+l.club:'')+(l.weight?' · '+l.weight+' lb':'');
+        return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.sp)+(l.de?' — '+esc(l.de):'')+esc(clubWt)+'</td><td>'+money(s)+'</td><td>'+money(a)+'</td><td>'+money(f)+'</td><td>'+money(lotNet(l,ev.feePct))+'</td></tr>';
       }).join('');
+      var pay=findPayout(ev,ex);
+      var payNote=pay&&pay.status==='picked_up'
+        ?('Payout picked up'+(pay.pickupDate?(' '+pay.pickupDate):'')+(pay.pickupDetail?(' · '+pay.pickupDetail):''))
+        :'Payout status: still owed — pickup tracked on Payouts screen';
       return '<div class="print-sheet"><h1>Exhibitor Settlement</h1>'+
         '<div>'+esc(ev.name)+'</div><div><strong>'+esc(ex)+'</strong></div>'+
+        '<div>'+esc(payNote)+'</div>'+
         (ev.feePct?'<div>Sale fee: '+esc(String(ev.feePct))+'%</div>':'')+
         '<table><thead><tr><th>Lot</th><th>Item</th><th>Sale</th><th>Add-ons</th><th>Fee</th><th>Net</th></tr></thead><tbody>'+rows+'</tbody></table>'+
         '<div class="total">Gross '+money(gross)+' + Add-ons '+money(add)+' − Fee '+money(fee)+' = Net '+money(gross+add-fee)+'</div></div>';
@@ -1227,10 +1505,46 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   $('printBill').onclick=function(){
     var ev=cur();
     var rows=ev.lots.map(function(l){
-      return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.ex)+'</td><td>'+esc(l.sp)+'</td><td>'+esc(l.de||'')+'</td><td>'+(l.price!=null?money(l.price):'')+'</td><td>'+esc(l.buyer||'')+'</td></tr>';
+      var wt=l.weight!=null&&Number(l.weight)>0?String(l.weight):'';
+      return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.ex)+'</td><td>'+esc(l.club||'')+'</td><td>'+esc(l.sp)+'</td><td>'+esc(l.de||'')+'</td><td>'+esc(wt)+'</td><td>'+(l.price!=null?money(l.price):'')+'</td><td>'+esc(l.buyer||'')+'</td></tr>';
     }).join('');
     printHTML('<div class="print-sheet"><h1>Sale Bill</h1><div>'+esc(ev.name)+'</div>'+
-      '<table><thead><tr><th>#</th><th>Exhibitor</th><th>Species</th><th>Description</th><th>Price</th><th>Buyer</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+      '<table><thead><tr><th>#</th><th>Exhibitor</th><th>Club</th><th>Species</th><th>Description</th><th>Wt (lb)</th><th>Price</th><th>Buyer</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+  };
+
+  function payoutRowsForExport(ev){
+    var rows=[['Exhibitor','Net amount','Status','Pickup date','Picked up by / check','Note','Overdue']];
+    var sum=payoutSummary(ev);
+    exhibitorsWithSales(ev).forEach(function(ex){
+      var amt=exhibitorNet(ev,ex);
+      var p=ensurePayout(ev,ex);
+      var picked=p.status==='picked_up';
+      var overdue=!picked&&ev.saleDate&&Date.now()>sum.deadline.getTime();
+      rows.push([ex, amt.toFixed(2), picked?'picked_up':'owed', p.pickupDate||'', p.pickupDetail||'', p.note||'', overdue?'yes':'']);
+    });
+    return rows;
+  }
+
+  $('printPayouts').onclick=function(){
+    var ev=cur();
+    var names=exhibitorsWithSales(ev);
+    if(!names.length){ dlgAlert('Nothing to print','No sold lots yet.'); return; }
+    var sum=payoutSummary(ev);
+    var rows=names.map(function(ex){
+      var amt=exhibitorNet(ev,ex);
+      var p=findPayout(ev,ex)||{status:'owed'};
+      var overdue=p.status!=='picked_up'&&ev.saleDate&&Date.now()>sum.deadline.getTime();
+      return '<tr><td>'+esc(ex)+'</td><td>'+money(amt)+'</td><td>'+(p.status==='picked_up'?'Picked up':'Owed')+'</td><td>'+esc(p.pickupDate||'')+'</td><td>'+esc(p.pickupDetail||'')+'</td><td>'+(overdue?'YES':'')+'</td></tr>';
+    }).join('');
+    printHTML('<div class="print-sheet"><h1>Exhibitor Payout List</h1><div>'+esc(ev.name)+'</div>'+
+      '<div>Deadline: '+esc(formatDateISO(sum.deadline))+' · Outstanding '+money(sum.outstanding)+' · Picked up '+money(sum.paidOut)+'</div>'+
+      '<table><thead><tr><th>Exhibitor</th><th>Net</th><th>Status</th><th>Pickup date</th><th>Detail</th><th>Overdue</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+  };
+  $('exportPayouts').onclick=function(){
+    var ev=cur();
+    var rows=payoutRowsForExport(ev);
+    var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+    download(slug(ev.name)+'-payouts.csv', txt, 'text/csv;charset=utf-8');
   };
 
   /* ---------- CSV / JSON ---------- */
@@ -1244,11 +1558,11 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 
   $('csv').onclick=function(){
     var ev=cur();
-    var rows=[['Lot','Exhibitor','Species','Description','Buyer','Bidder#','Price','AddOns','Fee','Net','FeePct']];
+    var rows=[['Lot','Exhibitor','Club','Species','Description','Weight_lbs','Buyer','Bidder#','Price','AddOns','Fee','Net','FeePct']];
     ev.lots.forEach(function(l){
       var bidder='';
       if(l.buyerId){var b=ev.buyers.find(function(x){return x.id===l.buyerId}); if(b) bidder=b.num}
-      rows.push([l.n,l.ex,l.sp,l.de,l.buyer,bidder,l.price==null?'':l.price,lotAddons(l),l.price==null?'':lotFee(l,ev.feePct),l.price==null?'':lotNet(l,ev.feePct),ev.feePct||0]);
+      rows.push([l.n,l.ex,l.club||'',l.sp,l.de,l.weight!=null?l.weight:'',l.buyer,bidder,l.price==null?'':l.price,lotAddons(l),l.price==null?'':lotFee(l,ev.feePct),l.price==null?'':lotNet(l,ev.feePct),ev.feePct||0]);
     });
     var txt=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
     download(slug(ev.name)+'.csv', txt, 'text/csv;charset=utf-8');
@@ -1479,6 +1793,8 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     $('inviteClerkForm').classList.toggle('hidden', !owner);
     $('orgNameInput').value=sessionUser.org.name;
     $('peopleOrg').textContent=owner?'Everyone here can open this organization\'s sales.':'Clerks can run sales. Only the owner can add or remove people.';
+    $('deleteAccountZone').classList.toggle('hidden', !owner);
+    $('deleteOrgLabel').textContent=sessionUser.org.name;
     $('peopleDlg').classList.remove('hidden');
     try{ await refreshPeople(); }
     catch(e){ peopleMsg(e.message||'Could not load people.', true); }
@@ -1521,6 +1837,35 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       this.reset();
     }catch(err){ peopleMsg(err.message, true); }
   };
+  $('deleteAccountBtn').onclick=async function(){
+    if(sessionUser.role!=='owner') return;
+    var res=await dlgPrompt('Delete organization permanently','Type the organization name exactly to confirm. All sales and accounts will be removed.',[
+      {name:'confirmName',label:'Organization name',required:true,placeholder:sessionUser.org.name,autofocus:true}
+    ]);
+    if(!res||!res.confirmName) return;
+    if(res.confirmName!==sessionUser.org.name){
+      await dlgAlert('Name did not match','Deletion cancelled.');
+      return;
+    }
+  var ok=await dlgConfirm('Last chance','Delete '+sessionUser.org.name+' forever?');
+    if(!ok) return;
+    try{
+      await api('/api/org',{method:'DELETE', body:{confirmName:res.confirmName}});
+      try{
+        var prefix='barnyard-cache-'+sessionUser.id;
+        Object.keys(localStorage).forEach(function(k){ if(k.indexOf('barnyard-cache-')===0) localStorage.removeItem(k); });
+        localStorage.removeItem('barnyard-profile');
+      }catch(err){}
+      sessionUser=null; S=null;
+      $('peopleDlg').classList.add('hidden');
+      showAuth();
+      setAuthError('');
+      await dlgAlert('Account deleted','Your organization and its data were removed.');
+    }catch(err){
+      peopleMsg(err.message||'Could not delete account.', true);
+    }
+  };
+
   $('memberList').addEventListener('click', async function(e){
     var id=e.target.getAttribute&&e.target.getAttribute('data-remove-member');
     if(!id) return;

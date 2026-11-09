@@ -245,4 +245,48 @@ describe('api', { concurrency: false }, () => {
     const clerkAfter = await req('GET', '/api/auth/me', { cookieJar: clerk });
     assert.equal(clerkAfter.status, 401);
   });
+
+  test('owner can delete the organization with name confirmation', async () => {
+    await resetData(app.pool);
+    const owner = jar();
+    const created = await signup(owner, { email: 'delete-org@example.com', orgName: 'Temp Fair Co' });
+    const clerk = jar();
+    await req('POST', '/api/org/clerks', {
+      cookieJar: owner,
+      body: { name: 'Helper', email: 'helper@example.com', password: 'clerk-pass-1' }
+    });
+    await req('POST', '/api/auth/login', {
+      cookieJar: clerk,
+      body: { email: 'helper@example.com', password: 'clerk-pass-1' }
+    });
+    await req('POST', '/api/sync', {
+      cookieJar: owner,
+      body: { push: [{ id: 'eDel', baseRev: 0, data: { id: 'eDel', name: 'Test', feePct: 0, lots: [], buyers: [] } }], known: [] }
+    });
+
+    const wrong = await req('DELETE', '/api/org', {
+      cookieJar: owner,
+      body: { confirmName: 'Wrong Name' }
+    });
+    assert.equal(wrong.status, 400);
+
+    const other = jar();
+    await signup(other, { email: 'survivor@example.com', orgName: 'Other Org' });
+
+    const deleted = await req('DELETE', '/api/org', {
+      cookieJar: owner,
+      body: { confirmName: 'Temp Fair Co' }
+    });
+    assert.equal(deleted.status, 200);
+    assert.equal(deleted.data.ok, true);
+
+    const gone = await req('GET', '/api/auth/me', { cookieJar: owner });
+    assert.equal(gone.status, 401);
+    const clerkGone = await req('GET', '/api/auth/me', { cookieJar: clerk });
+    assert.equal(clerkGone.status, 401);
+
+    const survivor = await req('GET', '/api/sales', { cookieJar: other });
+    assert.equal(survivor.status, 200);
+    assert.equal(survivor.data.sales.length, 0);
+  });
 });
