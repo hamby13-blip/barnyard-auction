@@ -35,12 +35,19 @@ function takeCookie(res, cookieJar) {
   }
 }
 
-async function req(method, path, { body, cookieJar, headers } = {}) {
+function appOrigin() {
+  return new URL(app.url).origin;
+}
+
+async function req(method, path, { body, cookieJar, headers, origin } = {}) {
   const res = await fetch(app.url + path, {
     method,
     headers: {
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...(method !== 'GET' && method !== 'HEAD' ? { 'X-Barnyard': '1' } : {}),
+      ...(method !== 'GET' && method !== 'HEAD'
+        ? { Origin: origin === false ? undefined : (origin || appOrigin()) }
+        : {}),
       ...(cookieJar && cookieJar.cookie ? { Cookie: cookieJar.cookie } : {}),
       ...(headers || {})
     },
@@ -145,10 +152,22 @@ describe('api', { concurrency: false }, () => {
     assert.equal(short.res.status, 400);
     const noHeader = await fetch(app.url + '/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Origin: appOrigin() },
       body: JSON.stringify({ email: 'dup@example.com', password: 'fair-week-1' })
     });
     assert.equal(noHeader.status, 403);
+
+    const badOrigin = await req('POST', '/api/auth/login', {
+      body: { email: 'dup@example.com', password: 'fair-week-1' },
+      origin: 'https://evil.example'
+    });
+    assert.equal(badOrigin.status, 403);
+
+    const noOrigin = await req('POST', '/api/auth/login', {
+      body: { email: 'dup@example.com', password: 'fair-week-1' },
+      origin: false
+    });
+    assert.equal(noOrigin.status, 403);
   });
 
   test('sales stay inside the organization and conflicts return the server copy', async () => {
@@ -312,5 +331,69 @@ describe('api', { concurrency: false }, () => {
     const survivor = await req('GET', '/api/sales', { cookieJar: other });
     assert.equal(survivor.status, 200);
     assert.equal(survivor.data.sales.length, 0);
+  });
+
+  test('organizations cannot read or overwrite another org sales or members', async () => {
+    await resetData(app.pool);
+    resetRateLimits();
+    const alpha = jar();
+    const beta = jar();
+    const a = await signup(alpha, { email: 'alpha@example.com', orgName: 'Alpha Fair' });
+    await signup(beta, { email: 'beta@example.com', orgName: 'Beta Fair' });
+
+    const saleId = 'eCrossOrg';
+    const secret = { id: saleId, name: 'Alpha only', feePct: 0, lots: [{ id: 'l1', n: 1, ex: 'Secret Kid', sp: 'Goat', price: 500, buyer: 'Buyer' }], buyers: [] };
+    const created = await req('POST', '/api/sync', {
+      cookieJar: alpha,
+      body: { push: [{ id: saleId, baseRev: 0, data: secret }], known: [] }
+    });
+    assert.equal(created.data.results[0].ok, true);
+
+    const betaTries = await req('POST', '/api/sync', {
+      cookieJar: beta,
+      body: {
+        push: [{ id: saleId, baseRev: 0, data: { ...secret, name: 'Beta hijack' } }],
+        known: []
+      }
+    });
+    assert.equal(betaTries.data.results[0].ok, true);
+
+    const alphaSales = await req('GET', '/api/sales', { cookieJar: alpha });
+    const alphaSale = alphaSales.data.sales.find((s) => s.id === saleId);
+    assert.equal(alphaSale.data.name, 'Alpha only');
+    assert.equal(alphaSale.data.lots[0].price, 500);
+
+    const betaSales = await req('GET', '/api/sales', { cookieJar: beta });
+    const betaSale = betaSales.data.sales.find((s) => s.id === saleId);
+    assert.equal(betaSale.data.name, 'Beta hijack');
+
+    const stealMember = await req('DELETE', `/api/org/members/${a.res.data.user.id}`, { cookieJar: beta });
+    assert.equal(stealMember.status, 404);
+  });
+
+  test('rejects invalid sale field values on sync', async () => {
+    await resetData(app.pool);
+    const owner = jar();
+    await signup(owner, { email: 'validate@example.com' });
+    const badPrice = await req('POST', '/api/sync', {
+      cookieJar: owner,
+      body: {
+        push: [{
+          id: 'eBad',
+          baseRev: 0,
+          data: {
+            id: 'eBad',
+            name: 'Bad',
+            feePct: 0,
+            lots: [{ id: 'l1', n: 1, ex: 'Sam', sp: 'Hen', price: -40 }],
+            buyers: []
+          }
+        }],
+        known: []
+      }
+    });
+    assert.equal(badPrice.status, 200);
+    assert.equal(badPrice.data.results[0].ok, false);
+    assert.match(badPrice.data.results[0].error, /price/i);
   });
 });
