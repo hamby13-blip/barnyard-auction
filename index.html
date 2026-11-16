@@ -54,6 +54,12 @@ label.fld > span{font-weight:600;color:var(--ink)}
 .lot-actions{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 .note{font-size:.85rem;color:var(--muted);margin-top:18px}
+.site-footer{margin-top:20px;padding:14px 0 8px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
+.site-footer a{color:var(--next);font-weight:600;text-decoration:none}
+.site-footer a:hover{text-decoration:underline}
+.auth-legal{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);text-align:center}
+.auth-legal a{color:var(--next);font-weight:600;text-decoration:none}
+.auth-legal a:hover{text-decoration:underline}
 .example-banner{background:color-mix(in srgb,var(--ticket) 28%,var(--surface));border:1px solid var(--ticket);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .tabs button[aria-selected="true"]{background:var(--board);color:var(--board-ink)}
@@ -139,6 +145,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <button type="submit">Join and sign in</button>
       <button type="button" class="ghost" id="inviteBack">Back to sign in</button>
     </form>
+    <p class="auth-legal">By using Barnyard Auction you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
   </div>
 </div>
 <div id="appScreen" class="wrap no-print hidden">
@@ -294,6 +301,11 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 
   <p class="note">Sales are saved to your fair or club and cached on this device, so a dropped Wi-Fi connection does not stop the sale. The status in the header shows Saved or Offline. Export a JSON backup after a big sale day.</p>
 </div>
+
+<footer class="site-footer wrap no-print" aria-label="Legal">
+  <a href="/privacy">Privacy Policy</a>
+  <a href="/terms">Terms of Service</a>
+</footer>
 
 <div id="peopleDlg" class="dlg-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="peopleTitle">
   <div class="dlg wide">

@@ -73,6 +73,30 @@ describe('api', { concurrency: false }, () => {
     assert.equal(res.data.ok, true);
   });
 
+  test('privacy and terms pages are public', async () => {
+    const privacy = await fetch(app.url + '/privacy');
+    assert.equal(privacy.status, 200);
+    const privacyHtml = await privacy.text();
+    assert.match(privacyHtml, /Privacy Policy/);
+    assert.match(privacyHtml, /Integenium/);
+
+    const terms = await fetch(app.url + '/terms');
+    assert.equal(terms.status, 200);
+    const termsHtml = await terms.text();
+    assert.match(termsHtml, /Terms of Service/);
+
+    const legalCss = await fetch(app.url + '/legal.css');
+    assert.equal(legalCss.status, 200);
+  });
+
+  test('home page links to privacy and terms when logged out', async () => {
+    const res = await fetch(app.url + '/');
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.match(html, /href="\/privacy"/);
+    assert.match(html, /href="\/terms"/);
+  });
+
   test('signup, login, session cookie, and logout', async () => {
     await resetData(app.pool);
     resetRateLimits();
