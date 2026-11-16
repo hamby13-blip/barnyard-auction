@@ -574,7 +574,17 @@ async function handleApi(req, res, pool, pathname) {
 }
 
 function sendFile(res, filePath, contentType) {
-  const body = fs.readFileSync(filePath);
+  let body;
+  try {
+    body = fs.readFileSync(filePath);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
+      return;
+    }
+    throw err;
+  }
   res.writeHead(200, {
     'Content-Type': contentType,
     'Cache-Control': 'no-cache',
