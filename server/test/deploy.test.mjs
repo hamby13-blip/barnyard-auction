@@ -12,7 +12,10 @@ const REQUIRED_STATIC_FILES = [
   'privacy.html',
   'terms.html',
   'public/merge.js',
-  'public/legal.css'
+  'public/legal.css',
+  'public/i18n.js',
+  'privacidad.html',
+  'terminos.html'
 ];
 
 test('runtime static asset files exist in the repository tree', () => {
@@ -33,4 +36,6 @@ test('Dockerfile copies every root HTML page the server serves', () => {
     );
   }
   assert.match(dockerfile, /COPY public \.\/public/, 'Dockerfile must COPY public/ for merge.js and legal.css');
+  assert.match(dockerfile, /privacidad\.html/, 'Dockerfile must COPY privacidad.html');
+  assert.match(dockerfile, /terminos\.html/, 'Dockerfile must COPY terminos.html');
 });

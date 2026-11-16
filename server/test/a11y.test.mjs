@@ -24,5 +24,5 @@ test('key inputs use visible labels', () => {
   assert.match(html, /id="fEx"/);
   assert.match(html, /id="bNum"/);
   assert.match(html, /for="jsonFile"/);
-  assert.match(html, /<span>Exhibitor<\/span>/);
+  assert.match(html, /data-i18n="lot.exhibitor"/);
 });
