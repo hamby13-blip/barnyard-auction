@@ -20,6 +20,9 @@ const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const indexPath = path.join(rootDir, 'index.html');
 const privacyPath = path.join(rootDir, 'privacy.html');
 const termsPath = path.join(rootDir, 'terms.html');
+const privacyEsPath = path.join(rootDir, 'privacidad.html');
+const termsEsPath = path.join(rootDir, 'terminos.html');
+const i18nPath = path.join(rootDir, 'public', 'i18n.js');
 const mergePath = path.join(rootDir, 'public', 'merge.js');
 const legalCssPath = path.join(rootDir, 'public', 'legal.css');
 // Legal page HTML is an operator draft — have counsel review before public launch.
@@ -577,6 +580,10 @@ export function createHandler(pool) {
         sendFile(res, mergePath, 'text/javascript; charset=utf-8');
         return;
       }
+      if (req.method === 'GET' && pathname === '/i18n.js') {
+        sendFile(res, i18nPath, 'text/javascript; charset=utf-8');
+        return;
+      }
       if (req.method === 'GET' && pathname === '/legal.css') {
         sendFile(res, legalCssPath, 'text/css; charset=utf-8');
         return;
@@ -587,6 +594,14 @@ export function createHandler(pool) {
       }
       if (req.method === 'GET' && pathname === '/terms') {
         sendFile(res, termsPath, 'text/html; charset=utf-8');
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/privacidad') {
+        sendFile(res, privacyEsPath, 'text/html; charset=utf-8');
+        return;
+      }
+      if (req.method === 'GET' && pathname === '/terminos') {
+        sendFile(res, termsEsPath, 'text/html; charset=utf-8');
         return;
       }
       if (pathname.startsWith('/api/')) {

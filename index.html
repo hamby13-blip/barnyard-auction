@@ -63,6 +63,8 @@ label.fld > span{font-weight:600;color:var(--ink)}
 .site-footer{margin-top:20px;padding:14px 0 8px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center}
 .site-footer a{color:var(--next);font-weight:600;text-decoration:none}
 .site-footer a:hover{text-decoration:underline}
+.lang-toggle{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin-bottom:8px}
+.lang-toggle button[aria-pressed="true"]{background:var(--next);color:#fff;border-color:var(--next)}
 .auth-legal{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);text-align:center}
 .auth-legal a{color:var(--next);font-weight:600;text-decoration:none}
 .auth-legal a:hover{text-decoration:underline}
@@ -119,175 +121,179 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 </style>
 </head>
 <body>
-<a class="skip-link no-print" href="#main-content">Skip to main content</a>
+<a class="skip-link no-print" href="#main-content" data-i18n="skip.main">Skip to main content</a>
 <main id="main-content" class="no-print" tabindex="-1">
 <div id="authScreen" class="wrap">
   <header class="board">
-    <h1>Barnyard Auction</h1>
-    <p>Sign in to clerk a youth or county-fair small-animal sale. Your fair or club keeps the sale, on every device you allow.</p>
+    <h1 data-i18n="app.title">Barnyard Auction</h1>
+    <p data-i18n="auth.tagline">Sign in to clerk a youth or county-fair small-animal sale. Your fair or club keeps the sale, on every device you allow.</p>
   </header>
+  <div class="lang-toggle no-print" role="group" data-i18n-aria="lang.group" aria-label="Language">
+    <button type="button" class="ghost sm" data-lang-set="en" data-i18n="lang.en" aria-pressed="true">English</button>
+    <button type="button" class="ghost sm" data-lang-set="es" data-i18n="lang.es" aria-pressed="false">Español</button>
+  </div>
   <div class="panel">
     <div class="tabs" id="authTabs" role="tablist" aria-label="Account">
-      <button type="button" role="tab" id="authTabLogin" aria-selected="true" aria-controls="loginPanel" tabindex="0">Sign in</button>
-      <button type="button" role="tab" id="authTabSignup" aria-selected="false" aria-controls="signupPanel" tabindex="-1">Create account</button>
+      <button type="button" role="tab" id="authTabLogin" aria-selected="true" aria-controls="loginPanel" tabindex="0" data-i18n="auth.signIn">Sign in</button>
+      <button type="button" role="tab" id="authTabSignup" aria-selected="false" aria-controls="signupPanel" tabindex="-1" data-i18n="auth.create">Create account</button>
     </div>
     <p id="authError" class="auth-error hidden" role="alert"></p>
     <div id="loginPanel" role="tabpanel" aria-labelledby="authTabLogin">
     <form id="loginForm" class="stack-form">
-      <label class="fld"><span>Email</span><input id="liEmail" type="email" autocomplete="username" required></label>
-      <label class="fld"><span>Password</span><input id="liPassword" type="password" autocomplete="current-password" required></label>
-      <button type="submit">Sign in</button>
+      <label class="fld"><span data-i18n="auth.email">Email</span><input id="liEmail" type="email" autocomplete="username" required></label>
+      <label class="fld"><span data-i18n="auth.password">Password</span><input id="liPassword" type="password" autocomplete="current-password" required></label>
+      <button type="submit" data-i18n="auth.signIn">Sign in</button>
     </form>
     </div>
     <div id="signupPanel" role="tabpanel" aria-labelledby="authTabSignup" class="hidden" hidden>
     <form id="signupForm" class="stack-form">
-      <label class="fld"><span>Your name</span><input id="suName" autocomplete="name" required></label>
-      <label class="fld"><span>Email</span><input id="suEmail" type="email" autocomplete="username" required></label>
-      <label class="fld"><span>Password</span><input id="suPassword" type="password" autocomplete="new-password" minlength="8" required></label>
-      <label class="fld"><span>Fair or club</span><input id="suOrg" autocomplete="organization" placeholder="Wilkes County 4-H" required></label>
-      <button type="submit">Create account</button>
-      <p class="note" style="margin:0">You become the owner and can add other clerks.</p>
+      <label class="fld"><span data-i18n="auth.yourName">Your name</span><input id="suName" autocomplete="name" required></label>
+      <label class="fld"><span data-i18n="auth.email">Email</span><input id="suEmail" type="email" autocomplete="username" required></label>
+      <label class="fld"><span data-i18n="auth.password">Password</span><input id="suPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="fld"><span data-i18n="auth.fairClub">Fair or club</span><input id="suOrg" autocomplete="organization" placeholder="Wilkes County 4-H" required></label>
+      <button type="submit" data-i18n="auth.createSubmit">Create account</button>
+      <p class="note" style="margin:0" data-i18n="auth.ownerNote">You become the owner and can add other clerks.</p>
     </form>
     </div>
     <div id="acceptPanel" class="hidden" hidden>
     <form id="acceptForm" class="stack-form">
-      <h2 style="margin:0;font-size:1.05rem">Join <span id="inviteOrgShow"></span></h2>
-      <p class="note" style="margin:0">This invite is for <strong id="inviteEmailShow"></strong>.</p>
-      <label class="fld"><span>Your name</span><input id="acName" autocomplete="name" required></label>
-      <label class="fld"><span>Password</span><input id="acPassword" type="password" autocomplete="new-password" minlength="8" required></label>
-      <button type="submit">Join and sign in</button>
-      <button type="button" class="ghost" id="inviteBack">Back to sign in</button>
+      <h2 style="margin:0;font-size:1.05rem"><span data-i18n="auth.join">Join</span> <span id="inviteOrgShow"></span></h2>
+      <p class="note" style="margin:0"><span data-i18n="auth.inviteFor">This invite is for</span> <strong id="inviteEmailShow"></strong>.</p>
+      <label class="fld"><span data-i18n="auth.yourName">Your name</span><input id="acName" autocomplete="name" required></label>
+      <label class="fld"><span data-i18n="auth.password">Password</span><input id="acPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+      <button type="submit" data-i18n="auth.joinSubmit">Join and sign in</button>
+      <button type="button" class="ghost" id="inviteBack" data-i18n="auth.backSignIn">Back to sign in</button>
     </form>
     </div>
-    <p class="auth-legal">By using Barnyard Auction you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
+    <p class="auth-legal" data-i18n="auth.legal">By using Barnyard Auction you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
   </div>
 </div>
 <div id="appScreen" class="wrap no-print hidden">
   <header class="board">
     <div class="headrow">
       <div>
-        <h1>Barnyard Auction</h1>
-        <p id="evtline">Run your small-animal sale from one screen.</p>
+        <h1 data-i18n="app.title">Barnyard Auction</h1>
+        <p id="evtline" data-i18n="app.tagline">Run your small-animal sale from one screen.</p>
       </div>
       <span id="syncState" class="syncpill ok" role="status" aria-live="polite" aria-atomic="true">Saved</span>
     </div>
     <div class="tot" role="group" aria-label="Sale totals">
-      <div><b id="tLots">0</b><span>Lots entered</span></div>
-      <div><b id="tSold">0</b><span>Sold</span></div>
-      <div><b id="tGross">$0</b><span>Gross sales</span></div>
-      <div><b id="tAddons">$0</b><span>Add-ons / support</span></div>
-      <div><b id="tFee">$0</b><span>Sale fee</span></div>
-      <div><b id="tAvg">$0</b><span>Avg sale (sold)</span></div>
-      <div class="hidden" id="tAvgLbWrap"><b id="tAvgLb">$0</b><span>Avg $/lb (sold)</span></div>
-      <div><b id="tNet">$0</b><span>Net owed exhibitors</span></div>
+      <div><b id="tLots">0</b><span data-i18n="tot.lots">Lots entered</span></div>
+      <div><b id="tSold">0</b><span data-i18n="tot.sold">Sold</span></div>
+      <div><b id="tGross">$0</b><span data-i18n="tot.gross">Gross sales</span></div>
+      <div><b id="tAddons">$0</b><span data-i18n="tot.addons">Add-ons / support</span></div>
+      <div><b id="tFee">$0</b><span data-i18n="tot.fee">Sale fee</span></div>
+      <div><b id="tAvg">$0</b><span data-i18n="tot.avg">Avg sale (sold)</span></div>
+      <div class="hidden" id="tAvgLbWrap"><b id="tAvgLb">$0</b><span data-i18n="tot.avgLb">Avg $/lb (sold)</span></div>
+      <div><b id="tNet">$0</b><span data-i18n="tot.net">Net owed exhibitors</span></div>
     </div>
-    <p id="boardPayoutNote" class="note" style="margin:10px 0 0;color:var(--board-muted);font-size:.82rem">Exhibitor payouts are tracked separately — money is often picked up days after the sale.</p>
+    <p id="boardPayoutNote" class="note" style="margin:10px 0 0;color:var(--board-muted);font-size:.82rem" data-i18n="payout.boardNote">Exhibitor payouts are tracked separately — money is often picked up days after the sale.</p>
   </header>
 
   <div class="accountbar">
     <div id="who"></div>
     <div class="bar" style="margin:0">
-      <button type="button" class="ghost sm" id="peopleBtn">People</button>
-      <button type="button" class="ghost sm" id="logoutBtn">Sign out</button>
+      <button type="button" class="ghost sm" id="peopleBtn" data-i18n="nav.people">People</button>
+      <button type="button" class="ghost sm" id="logoutBtn" data-i18n="nav.signOut">Sign out</button>
     </div>
   </div>
 
   <div id="exampleBanner" class="example-banner hidden">
-    <div><strong>Example data</strong> — this event is sample seed data so you can try the app. Clear it before your real sale.</div>
-    <button type="button" class="sm" id="clearExample">Clear example data</button>
+    <div><strong data-i18n="example.banner">Example data</strong> — <span data-i18n="example.body">this event is sample seed data so you can try the app. Clear it before your real sale.</span></div>
+    <button type="button" class="sm" id="clearExample" data-i18n="example.clear">Clear example data</button>
   </div>
 
   <div class="bar">
-    <label class="fld" style="flex:1 1 180px;margin:0"><span class="sr-only">Choose event</span>
-      <select id="evt" aria-label="Choose event"></select>
+    <label class="fld" style="flex:1 1 180px;margin:0"><span class="sr-only" data-i18n="event.choose">Choose event</span>
+      <select id="evt" data-i18n-aria="event.choose" aria-label="Choose event"></select>
     </label>
-    <button type="button" class="ghost" id="newEvt">New event</button>
-    <button type="button" class="ghost" id="renEvt">Rename</button>
-    <button type="button" class="ghost" id="delEvt">Delete event</button>
-    <button type="button" class="ghost" id="themeBtn" aria-label="Toggle light or dark theme" title="Theme">Theme</button>
+    <button type="button" class="ghost" id="newEvt" data-i18n="event.new">New event</button>
+    <button type="button" class="ghost" id="renEvt" data-i18n="event.rename">Rename</button>
+    <button type="button" class="ghost" id="delEvt" data-i18n="event.delete">Delete event</button>
+    <button type="button" class="ghost" id="themeBtn" data-i18n-aria="theme.toggle" data-i18n="theme.label" title="Theme">Theme</button>
   </div>
 
   <nav aria-label="Sale sections">
   <div class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" id="tabLots" aria-selected="true" aria-controls="secLots" tabindex="0">Lots</button>
-    <button type="button" role="tab" id="tabBuyers" aria-selected="false" aria-controls="secBuyers" tabindex="-1">Buyers</button>
-    <button type="button" role="tab" id="tabPayouts" aria-selected="false" aria-controls="secPayouts" tabindex="-1">Payouts</button>
-    <button type="button" role="tab" id="tabReports" aria-selected="false" aria-controls="secReports" tabindex="-1">Reports &amp; backup</button>
+    <button type="button" role="tab" id="tabLots" aria-selected="true" aria-controls="secLots" tabindex="0" data-i18n="tab.lots">Lots</button>
+    <button type="button" role="tab" id="tabBuyers" aria-selected="false" aria-controls="secBuyers" tabindex="-1" data-i18n="tab.buyers">Buyers</button>
+    <button type="button" role="tab" id="tabPayouts" aria-selected="false" aria-controls="secPayouts" tabindex="-1" data-i18n="tab.payouts">Payouts</button>
+    <button type="button" role="tab" id="tabReports" aria-selected="false" aria-controls="secReports" tabindex="-1" data-i18n="tab.reports">Reports &amp; backup</button>
   </div>
   </nav>
 
   <section id="secLots" role="tabpanel" aria-labelledby="tabLots" tabindex="-1">
     <div class="panel">
-      <h2>Event settings</h2>
+      <h2 data-i18n="sec.eventSettings">Event settings</h2>
       <form class="grid" id="feeForm" onsubmit="return false">
-        <label class="fld"><span>Commission / sale fee %</span>
+        <label class="fld"><span data-i18n="sec.fee">Commission / sale fee %</span>
           <input id="fFee" type="number" min="0" max="100" step="0.01" value="0" aria-describedby="feeHint">
         </label>
-        <label class="fld"><span>Sale date</span>
+        <label class="fld"><span data-i18n="sec.saleDate">Sale date</span>
           <input id="fSaleDate" type="date" aria-describedby="feeHint">
         </label>
-        <label class="fld"><span>Payout pickup deadline (days)</span>
+        <label class="fld"><span data-i18n="sec.payoutDays">Payout pickup deadline (days)</span>
           <input id="fPayoutDays" type="number" min="0" max="120" step="1" value="14">
         </label>
-        <p id="feeHint" class="note full" style="margin:0">Applied to sale price only (not add-ons). Net = sale − fee + add-ons. Payouts due by sale date + deadline days.</p>
+        <p id="feeHint" class="note full" style="margin:0" data-i18n="sec.feeHint">Applied to sale price only (not add-ons). Net = sale − fee + add-ons. Payouts due by sale date + deadline days.</p>
       </form>
     </div>
 
     <div class="panel">
-      <h2>Add a lot</h2>
+      <h2 data-i18n="sec.addLot">Add a lot</h2>
       <form class="add" id="addForm">
-        <label class="fld"><span>Exhibitor</span><input id="fEx" name="ex" required autocomplete="name"></label>
-        <label class="fld"><span>Species</span><input id="fSp" name="sp" required placeholder="rabbit, hen, goat…"></label>
-        <label class="fld"><span>Club / chapter (optional)</span><input id="fClub" name="club" placeholder="North Wilkes 4-H"></label>
-        <label class="fld"><span>Weight (lbs, optional)</span><input id="fWt" name="weight" type="number" min="0" step="0.1" placeholder="Live weight"></label>
-        <label class="fld full"><span>Description</span><input id="fDe" name="de" placeholder="breed, weight, pen of 3…"></label>
-        <button type="submit" class="full">Add lot</button>
+        <label class="fld"><span data-i18n="lot.exhibitor">Exhibitor</span><input id="fEx" name="ex" required autocomplete="name"></label>
+        <label class="fld"><span data-i18n="lot.species">Species</span><input id="fSp" name="sp" required placeholder="rabbit, hen, goat…"></label>
+        <label class="fld"><span data-i18n="lot.club">Club / chapter (optional)</span><input id="fClub" name="club" placeholder="North Wilkes 4-H"></label>
+        <label class="fld"><span data-i18n="lot.weight">Weight (lbs, optional)</span><input id="fWt" name="weight" type="number" min="0" step="0.1" placeholder="Live weight"></label>
+        <label class="fld full"><span data-i18n="lot.description">Description</span><input id="fDe" name="de" placeholder="breed, weight, pen of 3…"></label>
+        <button type="submit" class="full" data-i18n="lot.add">Add lot</button>
       </form>
     </div>
 
     <div class="filters">
-      <label class="fld"><span>Show</span>
-        <select id="fStatus" aria-label="Filter by status">
-          <option value="all">All lots</option>
-          <option value="unsold">Unsold</option>
-          <option value="sold">Sold</option>
+      <label class="fld"><span data-i18n="filter.show">Show</span>
+        <select id="fStatus" data-i18n-aria="filter.show" aria-label="Filter by status">
+          <option value="all" data-i18n="filter.all">All lots</option>
+          <option value="unsold" data-i18n="filter.unsold">Unsold</option>
+          <option value="sold" data-i18n="filter.sold">Sold</option>
         </select>
       </label>
-      <label class="fld"><span>Search exhibitor or species</span>
-        <input id="fSearch" type="search" placeholder="Search…">
+      <label class="fld"><span data-i18n="filter.search">Search exhibitor or species</span>
+        <input id="fSearch" type="search" data-i18n-placeholder="filter.searchPh" placeholder="Search…">
       </label>
     </div>
 
-    <div class="lots" id="lots" role="list" aria-live="polite" aria-label="Lots in this event"></div>
+    <div class="lots" id="lots" role="list" aria-live="polite" data-i18n-aria="lots.list" aria-label="Lots in this event"></div>
   </section>
 
   <section id="secPayouts" role="tabpanel" aria-labelledby="tabPayouts" class="hidden" hidden tabindex="-1">
     <div class="panel">
-      <h2>Exhibitor payouts</h2>
+      <h2 data-i18n="payout.title">Exhibitor payouts</h2>
       <p id="payoutDeadlineLine" class="note" style="margin-top:0"></p>
       <div class="payout-totals" id="payoutTotals" aria-live="polite"></div>
       <div class="bar" style="margin:0 0 12px">
-        <button type="button" id="printPayouts">Print payout list</button>
-        <button type="button" class="ghost" id="exportPayouts">Export CSV</button>
+        <button type="button" id="printPayouts" data-i18n="payout.print">Print payout list</button>
+        <button type="button" class="ghost" id="exportPayouts" data-i18n="payout.export">Export CSV</button>
       </div>
       <div id="payoutList"></div>
     </div>
     <div class="panel">
-      <h2>Buyer balances</h2>
-      <p class="note" style="margin-top:0">Outstanding buyer payments (sale day charges, not exhibitor payouts).</p>
+      <h2 data-i18n="buyer.balances">Buyer balances</h2>
+      <p class="note" style="margin-top:0" data-i18n="buyer.balancesNote">Outstanding buyer payments (sale day charges, not exhibitor payouts).</p>
       <div id="buyerBalanceList"></div>
     </div>
   </section>
 
   <section id="secBuyers" role="tabpanel" aria-labelledby="tabBuyers" class="hidden" hidden tabindex="-1">
     <div class="panel">
-      <h2>Buyer registry</h2>
+      <h2 data-i18n="buyer.registry">Buyer registry</h2>
       <form class="add" id="buyerForm">
-        <label class="fld"><span>Bidder #</span><input id="bNum" name="num" type="number" min="1" step="1" required></label>
-        <label class="fld"><span>Name</span><input id="bName" name="name" required></label>
-        <label class="fld"><span>Business (optional)</span><input id="bBiz" name="biz"></label>
-        <label class="fld"><span>Phone (optional)</span><input id="bPhone" name="phone" type="tel"></label>
-        <button type="submit" class="full">Add buyer</button>
+        <label class="fld"><span data-i18n="buyer.num">Bidder #</span><input id="bNum" name="num" type="number" min="1" step="1" required></label>
+        <label class="fld"><span data-i18n="buyer.name">Name</span><input id="bName" name="name" required></label>
+        <label class="fld"><span data-i18n="buyer.business">Business (optional)</span><input id="bBiz" name="biz"></label>
+        <label class="fld"><span data-i18n="buyer.phone">Phone (optional)</span><input id="bPhone" name="phone" type="tel"></label>
+        <button type="submit" class="full" data-i18n="buyer.add">Add buyer</button>
       </form>
       <div class="buyers-list" id="buyers" style="margin-top:14px"></div>
     </div>
@@ -295,34 +301,38 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 
   <section id="secReports" role="tabpanel" aria-labelledby="tabReports" class="hidden" hidden tabindex="-1">
     <div class="panel">
-      <h2>Printable reports</h2>
+      <h2 data-i18n="reports.printable">Printable reports</h2>
       <div class="bar" style="margin:0">
-        <button type="button" id="printInvoices">Buyer invoices</button>
-        <button type="button" class="ghost" id="printSettlements">Exhibitor settlements</button>
-        <button type="button" class="ghost" id="printBill">Sale bill (catalog)</button>
+        <button type="button" id="printInvoices" data-i18n="reports.invoices">Buyer invoices</button>
+        <button type="button" class="ghost" id="printSettlements" data-i18n="reports.settlements">Exhibitor settlements</button>
+        <button type="button" class="ghost" id="printBill" data-i18n="reports.bill">Sale bill (catalog)</button>
       </div>
-      <p class="note" style="margin-top:10px">Each buyer invoice prints on its own page. Use your browser’s print dialog.</p>
+      <p class="note" style="margin-top:10px" data-i18n="reports.printNote">Each buyer invoice prints on its own page. Use your browser’s print dialog.</p>
     </div>
     <div class="panel">
-      <h2>Backup &amp; export</h2>
+      <h2 data-i18n="reports.backup">Backup &amp; export</h2>
       <div class="bar" style="margin:0">
-        <button type="button" id="jsonExport">Export JSON backup</button>
-        <button type="button" class="ghost" id="jsonImport">Import JSON…</button>
-        <button type="button" class="ghost hidden" id="importDevice">Import on-device sales</button>
-        <button type="button" class="ghost" id="csv">Export CSV</button>
-        <label class="sr-only" for="jsonFile">Import JSON backup file</label>
+        <button type="button" id="jsonExport" data-i18n="reports.jsonExport">Export JSON backup</button>
+        <button type="button" class="ghost" id="jsonImport" data-i18n="reports.jsonImport">Import JSON…</button>
+        <button type="button" class="ghost hidden" id="importDevice" data-i18n="reports.importDevice">Import on-device sales</button>
+        <button type="button" class="ghost" id="csv" data-i18n="reports.csv">Export CSV</button>
+        <label class="sr-only" for="jsonFile" data-i18n="reports.jsonFile">Import JSON backup file</label>
         <input type="file" id="jsonFile" accept="application/json,.json" class="sr-only">
       </div>
     </div>
   </section>
 
-  <p class="note">Sales are saved to your fair or club and cached on this device, so a dropped Wi-Fi connection does not stop the sale. The status in the header shows Saved or Offline. Export a JSON backup after a big sale day.</p>
+  <p class="note" data-i18n="footer.syncNote">Sales are saved to your fair or club and cached on this device, so a dropped Wi-Fi connection does not stop the sale. The status in the header shows Saved or Offline. Export a JSON backup after a big sale day.</p>
 </div>
 </main>
 
 <footer class="site-footer wrap no-print" aria-label="Legal">
-  <a href="/privacy">Privacy Policy</a>
-  <a href="/terms">Terms of Service</a>
+  <div class="lang-toggle" role="group" data-i18n-aria="lang.group" aria-label="Language">
+    <button type="button" class="ghost sm" data-lang-set="en" data-i18n="lang.en" aria-pressed="true">English</button>
+    <button type="button" class="ghost sm" data-lang-set="es" data-i18n="lang.es" aria-pressed="false">Español</button>
+  </div>
+  <a href="/privacy" data-i18n="legal.privacy" data-i18n-link="privacy">Privacy Policy</a>
+  <a href="/terms" data-i18n="legal.terms" data-i18n-link="terms">Terms of Service</a>
 </footer>
 
 <div id="peopleDlg" class="dlg-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="peopleTitle">
@@ -375,9 +385,12 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   </div>
 </div>
 
+<script src="/i18n.js"></script>
 <script src="/merge.js"></script>
 <script>
 (function(){
+  var I18N=window.BarnyardI18n;
+  function t(k,vars){ return I18N.t(k,vars); }
   var KEY_LEGACY='barnyard-demo-v1', S;
   var sessionUser=null, inviteToken='';
   var lastEventJson={}, baseRev={}, syncGen={}, ackedGen={}, deletedAt={};
@@ -387,7 +400,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   var dlgResolve=null, dlgMode='alert', dlgLastFocus=null, peopleLastFocus=null;
 
   function uid(p){return (p||'id')+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
-  function money(n){n=Number(n)||0;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
+  function money(n){ return I18N.formatMoney(n); }
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML}
   var $=function(i){return document.getElementById(i)};
 
@@ -639,10 +652,10 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   function setSync(mode){
     var el=$('syncState'); if(!el) return;
     el.classList.remove('ok','wait','bad');
-    if(mode==='saving'){ el.textContent='Saving\u2026'; el.classList.add('wait'); }
-    else if(mode==='offline'){ el.textContent='Offline \u2014 saved on this device'; el.classList.add('bad'); }
-    else if(mode==='error'){ el.textContent='Not synced \u2014 will retry'; el.classList.add('bad'); }
-    else { el.textContent='Saved'; el.classList.add('ok'); }
+    if(mode==='saving'){ el.textContent=t('sync.saving'); el.classList.add('wait'); }
+    else if(mode==='offline'){ el.textContent=t('sync.offline'); el.classList.add('bad'); }
+    else if(mode==='error'){ el.textContent=t('sync.error'); el.classList.add('bad'); }
+    else { el.textContent=t('sync.saved'); el.classList.add('ok'); }
   }
   function hasDirty(){
     var ids=Object.keys(syncGen);
@@ -1269,7 +1282,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var rows=unpaid.map(function(x){
         return '<tr><th scope="row">'+esc(String(x.b.num))+'</th><td>'+esc(x.b.name)+'</td><td>'+money(x.d.total)+'</td><td><span class="unpaid">Unpaid</span></td></tr>';
       }).join('');
-      bal.innerHTML='<table class="data-table"><caption class="sr-only">Outstanding buyer balances</caption><thead><tr><th scope="col">Bidder #</th><th scope="col">Name</th><th scope="col">Balance</th><th scope="col">Status</th></tr></thead><tbody>'+rows+'</tbody></table>';
+      bal.innerHTML='<table class="data-table"><caption class="sr-only">Outstanding buyer balances</caption><thead><tr><th scope="col">'+esc(t('buyer.num'))+'</th><th scope="col">'+esc(t('buyer.name'))+'</th><th scope="col">'+esc(t('print.amount'))+'</th><th scope="col">'+esc(t('print.status'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>';
     }
     save();
   }
@@ -1541,12 +1554,12 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var d=buyerDue(ev,b);
       if(!d.lines.length) return '';
       var rows=d.lines.map(function(ln){return '<tr><td>'+esc(String(ln.n))+'</td><td>'+esc(ln.desc)+'</td><td>'+money(ln.amt)+'</td></tr>'}).join('');
-      return '<div class="print-sheet"><h1>Buyer Invoice</h1>'+
+      return '<div class="print-sheet"><h1>'+esc(t('print.buyerInvoice'))+'</h1>'+
         '<div>'+esc(ev.name)+'</div>'+
         '<div><strong>#'+esc(String(b.num))+' '+esc(b.name)+'</strong>'+(b.business?' · '+esc(b.business):'')+(b.phone?' · '+esc(b.phone):'')+'</div>'+
         '<div>Status: '+(b.paid?'PAID':'UNPAID')+'</div>'+
-        '<table><thead><tr><th>Lot</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-        '<div class="total">Total due: '+money(d.total)+'</div></div>';
+        '<table><thead><tr><th scope="col">'+esc(t('print.lot'))+'</th><th scope="col">'+esc(t('print.description'))+'</th><th scope="col">'+esc(t('print.amount'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+        '<div class="total">'+esc(t('print.totalDue'))+': '+money(d.total)+'</div></div>';
     }).filter(Boolean).join('');
     if(!sheets){ dlgAlert('Nothing to print','No sold lots yet.'); return; }
     printHTML(sheets);
@@ -1574,11 +1587,11 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var payNote=pay&&pay.status==='picked_up'
         ?('Payout picked up'+(pay.pickupDate?(' '+pay.pickupDate):'')+(pay.pickupDetail?(' · '+pay.pickupDetail):''))
         :'Payout status: still owed — pickup tracked on Payouts screen';
-      return '<div class="print-sheet"><h1>Exhibitor Settlement</h1>'+
+      return '<div class="print-sheet"><h1>'+esc(t('print.settlement'))+'</h1>'+
         '<div>'+esc(ev.name)+'</div><div><strong>'+esc(ex)+'</strong></div>'+
         '<div>'+esc(payNote)+'</div>'+
         (ev.feePct?'<div>Sale fee: '+esc(String(ev.feePct))+'%</div>':'')+
-        '<table><thead><tr><th>Lot</th><th>Item</th><th>Sale</th><th>Add-ons</th><th>Fee</th><th>Net</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+        '<table><thead><tr><th scope="col">'+esc(t('print.lot'))+'</th><th scope="col">'+esc(t('print.item'))+'</th><th scope="col">'+esc(t('print.sale'))+'</th><th scope="col">'+esc(t('print.addons'))+'</th><th scope="col">'+esc(t('print.fee'))+'</th><th scope="col">'+esc(t('print.net'))+'</th></tr></thead><tbody>'+rows+'</tbody></table>'+
         '<div class="total">Gross '+money(gross)+' + Add-ons '+money(add)+' − Fee '+money(fee)+' = Net '+money(gross+add-fee)+'</div></div>';
     }).join('');
     printHTML(sheets);
@@ -1590,8 +1603,8 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var wt=l.weight!=null&&Number(l.weight)>0?String(l.weight):'';
       return '<tr><td>'+esc(String(l.n))+'</td><td>'+esc(l.ex)+'</td><td>'+esc(l.club||'')+'</td><td>'+esc(l.sp)+'</td><td>'+esc(l.de||'')+'</td><td>'+esc(wt)+'</td><td>'+(l.price!=null?money(l.price):'')+'</td><td>'+esc(l.buyer||'')+'</td></tr>';
     }).join('');
-    printHTML('<div class="print-sheet"><h1>Sale Bill</h1><div>'+esc(ev.name)+'</div>'+
-      '<table><thead><tr><th>#</th><th>Exhibitor</th><th>Club</th><th>Species</th><th>Description</th><th>Wt (lb)</th><th>Price</th><th>Buyer</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+    printHTML('<div class="print-sheet"><h1>'+esc(t('print.saleBill'))+'</h1><div>'+esc(ev.name)+'</div>'+
+      '<table><thead><tr><th scope="col">#</th><th scope="col">'+esc(t('print.exhibitor'))+'</th><th scope="col">'+esc(t('print.club'))+'</th><th scope="col">'+esc(t('print.species'))+'</th><th scope="col">'+esc(t('print.description'))+'</th><th scope="col">'+esc(t('print.weight'))+'</th><th scope="col">'+esc(t('print.price'))+'</th><th scope="col">'+esc(t('print.buyer'))+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
   };
 
   function payoutRowsForExport(ev){
@@ -1618,9 +1631,9 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var overdue=p.status!=='picked_up'&&ev.saleDate&&Date.now()>sum.deadline.getTime();
       return '<tr><td>'+esc(ex)+'</td><td>'+money(amt)+'</td><td>'+(p.status==='picked_up'?'Picked up':'Owed')+'</td><td>'+esc(p.pickupDate||'')+'</td><td>'+esc(p.pickupDetail||'')+'</td><td>'+(overdue?'YES':'')+'</td></tr>';
     }).join('');
-    printHTML('<div class="print-sheet"><h1>Exhibitor Payout List</h1><div>'+esc(ev.name)+'</div>'+
+    printHTML('<div class="print-sheet"><h1>'+esc(t('print.payoutList'))+'</h1><div>'+esc(ev.name)+'</div>'+
       '<div>Deadline: '+esc(formatDateISO(sum.deadline))+' · Outstanding '+money(sum.outstanding)+' · Picked up '+money(sum.paidOut)+'</div>'+
-      '<table><thead><tr><th>Exhibitor</th><th>Net</th><th>Status</th><th>Pickup date</th><th>Detail</th><th>Overdue</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+      '<table><thead><tr><th scope="col">'+esc(t('print.exhibitor'))+'</th><th scope="col">'+esc(t('print.net'))+'</th><th scope="col">'+esc(t('print.status'))+'</th><th scope="col">'+esc(t('print.pickupDate'))+'</th><th scope="col">'+esc(t('print.detail'))+'</th><th scope="col">'+esc(t('print.overdue'))+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
   };
   $('exportPayouts').onclick=function(){
     var ev=cur();
@@ -2024,6 +2037,17 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     if(invite) await prepareInvite(invite);
   }
 
+  function bindLang(){
+    document.querySelectorAll('[data-lang-set]').forEach(function(btn){
+      btn.onclick=function(){
+        I18N.setLang(btn.getAttribute('data-lang-set'));
+        I18N.applyDocument();
+        if(sessionUser) render();
+      };
+    });
+  }
+  I18N.applyDocument();
+  bindLang();
   applyTheme();
   boot();
 })();
