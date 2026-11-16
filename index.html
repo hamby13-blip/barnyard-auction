@@ -6,7 +6,7 @@
 <title>Barnyard Auction</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f4f5ef;--surface:#fff;--ink:#1d2b26;--muted:#5d6b64;--line:#d9dcd0;--board:#1d2b26;--board-ink:#f4f5ef;--ticket:#f2c230;--ribbon:#b5372b;--ok:#2f7a4b;--next:#3a6ea5;
+:root{--bg:#F5F8FC;--surface:#fff;--ink:#3E4A5A;--muted:#4A5562;--line:#E4ECF5;--board:#0F3F8C;--board-ink:#F5F8FC;--board-muted:#E4ECF5;--ticket:#f2c230;--ribbon:#b5372b;--ok:#2f7a4b;--next:#1F5FBF;--focus-ring:#1F5FBF;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141b18;--surface:#1d2723;--ink:#eef0e8;--muted:#9aa89f;--line:#33423b;--board:#0d1210;--ok:#5cc184;--next:#6aa3d8;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#141b18;--surface:#1d2723;--ink:#eef0e8;--muted:#9aa89f;--line:#33423b;--board:#0d1210;--ok:#5cc184;--next:#6aa3d8;color-scheme:dark}
@@ -16,11 +16,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Archivo,s
 .wrap{max-width:920px;margin:0 auto;padding:16px}
 header.board{background:var(--board);color:var(--board-ink);border-radius:14px;padding:20px;margin-bottom:16px}
 header.board h1{margin:0 0 4px;font-weight:800;font-size:1.7rem;letter-spacing:-.01em}
-header.board p{margin:0;color:#b9c4bd;font-size:.95rem}
+header.board p{margin:0;color:var(--board-muted);font-size:.95rem}
 .tot{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .tot div{flex:1 1 100px;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 12px}
 .tot b{display:block;font-size:1.35rem;font-weight:800;color:var(--ticket)}
-.tot span{font-size:.8rem;color:#b9c4bd}
+.tot span{font-size:.8rem;color:var(--board-muted)}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 select,input,button,textarea{font:inherit;color:var(--ink)}
 select,input,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%}
@@ -29,7 +29,13 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink
 button.danger{background:transparent;color:var(--ribbon);border:0;padding:6px 8px}
 button.sm{padding:6px 10px;font-size:.9rem}
 button:disabled{opacity:.45;cursor:not-allowed}
-:focus-visible{outline:3px solid var(--ticket);outline-offset:2px}
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px}
+.skip-link{position:absolute;left:8px;top:-48px;z-index:2000;background:var(--board);color:var(--board-ink);padding:10px 14px;border-radius:8px;font-weight:700;text-decoration:none}
+.skip-link:focus{top:8px;outline:3px solid var(--ticket);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.data-table{width:100%;border-collapse:collapse;margin-top:8px}
+.data-table th,.data-table td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.data-table th{font-size:.85rem;color:var(--muted);font-weight:700}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
 .panel h2{margin:0 0 12px;font-size:1.05rem}
 .panel h3{margin:16px 0 8px;font-size:.95rem}
@@ -92,7 +98,7 @@ label.fld > span{font-weight:600;color:var(--ink)}
 .accountbar #who{font-size:.92rem}
 .dlg.wide{max-width:520px;max-height:min(90vh,680px);overflow:auto}
 header.board .headrow{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-header.board .syncpill{flex:0 0 auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#d7f5e3;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:700;white-space:nowrap}
+header.board .syncpill{flex:0 0 auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);color:#F5F8FC;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:700;white-space:nowrap}
 header.board .syncpill.wait{color:var(--ticket);border-color:var(--ticket)}
 header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 .member-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -113,23 +119,28 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
 </style>
 </head>
 <body>
-<div id="authScreen" class="wrap no-print">
+<a class="skip-link no-print" href="#main-content">Skip to main content</a>
+<main id="main-content" class="no-print" tabindex="-1">
+<div id="authScreen" class="wrap">
   <header class="board">
     <h1>Barnyard Auction</h1>
     <p>Sign in to clerk a youth or county-fair small-animal sale. Your fair or club keeps the sale, on every device you allow.</p>
   </header>
   <div class="panel">
     <div class="tabs" id="authTabs" role="tablist" aria-label="Account">
-      <button type="button" id="authTabLogin" aria-selected="true">Sign in</button>
-      <button type="button" id="authTabSignup" aria-selected="false">Create account</button>
+      <button type="button" role="tab" id="authTabLogin" aria-selected="true" aria-controls="loginPanel" tabindex="0">Sign in</button>
+      <button type="button" role="tab" id="authTabSignup" aria-selected="false" aria-controls="signupPanel" tabindex="-1">Create account</button>
     </div>
     <p id="authError" class="auth-error hidden" role="alert"></p>
+    <div id="loginPanel" role="tabpanel" aria-labelledby="authTabLogin">
     <form id="loginForm" class="stack-form">
       <label class="fld"><span>Email</span><input id="liEmail" type="email" autocomplete="username" required></label>
       <label class="fld"><span>Password</span><input id="liPassword" type="password" autocomplete="current-password" required></label>
       <button type="submit">Sign in</button>
     </form>
-    <form id="signupForm" class="stack-form hidden">
+    </div>
+    <div id="signupPanel" role="tabpanel" aria-labelledby="authTabSignup" class="hidden" hidden>
+    <form id="signupForm" class="stack-form">
       <label class="fld"><span>Your name</span><input id="suName" autocomplete="name" required></label>
       <label class="fld"><span>Email</span><input id="suEmail" type="email" autocomplete="username" required></label>
       <label class="fld"><span>Password</span><input id="suPassword" type="password" autocomplete="new-password" minlength="8" required></label>
@@ -137,7 +148,9 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <button type="submit">Create account</button>
       <p class="note" style="margin:0">You become the owner and can add other clerks.</p>
     </form>
-    <form id="acceptForm" class="stack-form hidden">
+    </div>
+    <div id="acceptPanel" class="hidden" hidden>
+    <form id="acceptForm" class="stack-form">
       <h2 style="margin:0;font-size:1.05rem">Join <span id="inviteOrgShow"></span></h2>
       <p class="note" style="margin:0">This invite is for <strong id="inviteEmailShow"></strong>.</p>
       <label class="fld"><span>Your name</span><input id="acName" autocomplete="name" required></label>
@@ -145,6 +158,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <button type="submit">Join and sign in</button>
       <button type="button" class="ghost" id="inviteBack">Back to sign in</button>
     </form>
+    </div>
     <p class="auth-legal">By using Barnyard Auction you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</p>
   </div>
 </div>
@@ -155,7 +169,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
         <h1>Barnyard Auction</h1>
         <p id="evtline">Run your small-animal sale from one screen.</p>
       </div>
-      <span id="syncState" class="syncpill ok" role="status" aria-live="polite">Saved</span>
+      <span id="syncState" class="syncpill ok" role="status" aria-live="polite" aria-atomic="true">Saved</span>
     </div>
     <div class="tot" role="group" aria-label="Sale totals">
       <div><b id="tLots">0</b><span>Lots entered</span></div>
@@ -167,7 +181,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       <div class="hidden" id="tAvgLbWrap"><b id="tAvgLb">$0</b><span>Avg $/lb (sold)</span></div>
       <div><b id="tNet">$0</b><span>Net owed exhibitors</span></div>
     </div>
-    <p id="boardPayoutNote" class="note" style="margin:10px 0 0;color:#b9c4bd;font-size:.82rem">Exhibitor payouts are tracked separately — money is often picked up days after the sale.</p>
+    <p id="boardPayoutNote" class="note" style="margin:10px 0 0;color:var(--board-muted);font-size:.82rem">Exhibitor payouts are tracked separately — money is often picked up days after the sale.</p>
   </header>
 
   <div class="accountbar">
@@ -193,14 +207,16 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     <button type="button" class="ghost" id="themeBtn" aria-label="Toggle light or dark theme" title="Theme">Theme</button>
   </div>
 
+  <nav aria-label="Sale sections">
   <div class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" id="tabLots" aria-selected="true" aria-controls="secLots">Lots</button>
-    <button type="button" role="tab" id="tabBuyers" aria-selected="false" aria-controls="secBuyers">Buyers</button>
-    <button type="button" role="tab" id="tabPayouts" aria-selected="false" aria-controls="secPayouts">Payouts</button>
-    <button type="button" role="tab" id="tabReports" aria-selected="false" aria-controls="secReports">Reports &amp; backup</button>
+    <button type="button" role="tab" id="tabLots" aria-selected="true" aria-controls="secLots" tabindex="0">Lots</button>
+    <button type="button" role="tab" id="tabBuyers" aria-selected="false" aria-controls="secBuyers" tabindex="-1">Buyers</button>
+    <button type="button" role="tab" id="tabPayouts" aria-selected="false" aria-controls="secPayouts" tabindex="-1">Payouts</button>
+    <button type="button" role="tab" id="tabReports" aria-selected="false" aria-controls="secReports" tabindex="-1">Reports &amp; backup</button>
   </div>
+  </nav>
 
-  <section id="secLots" role="tabpanel" aria-labelledby="tabLots">
+  <section id="secLots" role="tabpanel" aria-labelledby="tabLots" tabindex="-1">
     <div class="panel">
       <h2>Event settings</h2>
       <form class="grid" id="feeForm" onsubmit="return false">
@@ -238,14 +254,14 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
         </select>
       </label>
       <label class="fld"><span>Search exhibitor or species</span>
-        <input id="fSearch" type="search" placeholder="Search…" aria-label="Search exhibitor or species">
+        <input id="fSearch" type="search" placeholder="Search…">
       </label>
     </div>
 
-    <div class="lots" id="lots" aria-live="polite"></div>
+    <div class="lots" id="lots" role="list" aria-live="polite" aria-label="Lots in this event"></div>
   </section>
 
-  <section id="secPayouts" role="tabpanel" aria-labelledby="tabPayouts" class="hidden">
+  <section id="secPayouts" role="tabpanel" aria-labelledby="tabPayouts" class="hidden" hidden tabindex="-1">
     <div class="panel">
       <h2>Exhibitor payouts</h2>
       <p id="payoutDeadlineLine" class="note" style="margin-top:0"></p>
@@ -263,7 +279,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     </div>
   </section>
 
-  <section id="secBuyers" role="tabpanel" aria-labelledby="tabBuyers" class="hidden">
+  <section id="secBuyers" role="tabpanel" aria-labelledby="tabBuyers" class="hidden" hidden tabindex="-1">
     <div class="panel">
       <h2>Buyer registry</h2>
       <form class="add" id="buyerForm">
@@ -277,7 +293,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     </div>
   </section>
 
-  <section id="secReports" role="tabpanel" aria-labelledby="tabReports" class="hidden">
+  <section id="secReports" role="tabpanel" aria-labelledby="tabReports" class="hidden" hidden tabindex="-1">
     <div class="panel">
       <h2>Printable reports</h2>
       <div class="bar" style="margin:0">
@@ -294,13 +310,15 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
         <button type="button" class="ghost" id="jsonImport">Import JSON…</button>
         <button type="button" class="ghost hidden" id="importDevice">Import on-device sales</button>
         <button type="button" class="ghost" id="csv">Export CSV</button>
-        <input type="file" id="jsonFile" accept="application/json,.json" class="sr-only" aria-hidden="true">
+        <label class="sr-only" for="jsonFile">Import JSON backup file</label>
+        <input type="file" id="jsonFile" accept="application/json,.json" class="sr-only">
       </div>
     </div>
   </section>
 
   <p class="note">Sales are saved to your fair or club and cached on this device, so a dropped Wi-Fi connection does not stop the sale. The status in the header shows Saved or Offline. Export a JSON backup after a big sale day.</p>
 </div>
+</main>
 
 <footer class="site-footer wrap no-print" aria-label="Legal">
   <a href="/privacy">Privacy Policy</a>
@@ -366,7 +384,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   var lastCurrent=null, syncTimer=null, pullTimer=null, syncing=false, syncQueued=false;
   var nextPullAt=0, retryDelay=1000, pendingRender=false, booting=false;
   var filterStatus='all', filterQ='';
-  var dlgResolve=null, dlgMode='alert';
+  var dlgResolve=null, dlgMode='alert', dlgLastFocus=null, peopleLastFocus=null;
 
   function uid(p){return (p||'id')+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
   function money(n){n=Number(n)||0;return '$'+n.toLocaleString('en-US',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
@@ -928,6 +946,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   /* ---------- dialogs (replace prompt/alert/confirm) ---------- */
   function openDlg(opts){
     return new Promise(function(resolve){
+      dlgLastFocus=document.activeElement;
       dlgResolve=resolve; dlgMode=opts.mode||'alert';
       $('dlgTitle').textContent=opts.title||'';
       $('dlgMsg').textContent=opts.message||'';
@@ -960,6 +979,8 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   function closeDlg(val){
     $('dlg').classList.add('hidden');
     var r=dlgResolve; dlgResolve=null; if(r) r(val);
+    if(dlgLastFocus && dlgLastFocus.focus) try{ dlgLastFocus.focus(); }catch(ignore){}
+    dlgLastFocus=null;
   }
   function readDlgFields(){
     var out={}; $('dlgBody').querySelectorAll('input,textarea').forEach(function(el){out[el.name]=el.value}); return out;
@@ -981,6 +1002,14 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   $('dlg').addEventListener('keydown',function(e){
     if(e.key==='Escape'){e.preventDefault();closeDlg(null)}
     if(e.key==='Enter' && e.target.tagName!=='TEXTAREA'){e.preventDefault();$('dlgOk').click()}
+    if(e.key==='Tab' && !$('dlg').classList.contains('hidden')){
+      var nodes=$('dlg').querySelectorAll('button,input,textarea,select,[href],summary');
+      var list=Array.prototype.filter.call(nodes,function(el){return !el.disabled && el.offsetParent!==null;});
+      if(!list.length) return;
+      var first=list[0], last=list[list.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
   });
   $('dlg').addEventListener('click',function(e){if(e.target===$('dlg')) closeDlg(null)});
 
@@ -1003,18 +1032,56 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   applyTheme();
 
   /* ---------- tabs ---------- */
+  var TAB_NAMES=['Lots','Buyers','Payouts','Reports'];
   function showTab(name){
-    ['Lots','Buyers','Payouts','Reports'].forEach(function(n){
+    TAB_NAMES.forEach(function(n){
       var on=n===name;
-      $('tab'+n).setAttribute('aria-selected',on?'true':'false');
-      $('sec'+n).classList.toggle('hidden',!on);
+      var tab=$('tab'+n);
+      var panel=$('sec'+n);
+      tab.setAttribute('aria-selected',on?'true':'false');
+      tab.tabIndex=on?0:-1;
+      panel.classList.toggle('hidden',!on);
+      panel.hidden=!on;
+      if(on) panel.setAttribute('tabindex','-1');
     });
+  }
+  function focusAppTab(name){
+    showTab(name);
+    var panel=$('sec'+name);
+    if(panel && !panel.hidden) panel.focus();
+    if(name==='Buyers') renderBuyers();
     if(name==='Payouts') renderPayouts();
   }
-  $('tabLots').onclick=function(){showTab('Lots')};
-  $('tabBuyers').onclick=function(){showTab('Buyers');renderBuyers()};
-  $('tabPayouts').onclick=function(){showTab('Payouts')};
-  $('tabReports').onclick=function(){showTab('Reports')};
+  TAB_NAMES.forEach(function(n){
+    $('tab'+n).onclick=function(){ focusAppTab(n); if(n==='Lots') render(); };
+  });
+  $('authTabs').addEventListener('keydown', function(e){
+    if($('authTabs').classList.contains('hidden')) return;
+    var login=$('authTabLogin').getAttribute('aria-selected')==='true';
+    var next=login?'signup':'login';
+    if(e.key==='ArrowRight' || e.key==='ArrowDown' || e.key==='ArrowLeft' || e.key==='ArrowUp'){
+      e.preventDefault();
+      showAuthTab(next);
+      (login?$('authTabSignup'):$('authTabLogin')).focus();
+    } else if(e.key==='Home'){ e.preventDefault(); showAuthTab('login'); $('authTabLogin').focus(); }
+    else if(e.key==='End'){ e.preventDefault(); showAuthTab('signup'); $('authTabSignup').focus(); }
+  });
+  var saleTablist=document.querySelector('nav[aria-label="Sale sections"] [role="tablist"]');
+  if(saleTablist){
+    saleTablist.addEventListener('keydown', function(e){
+      var idx=TAB_NAMES.findIndex(function(n){ return $('tab'+n).getAttribute('aria-selected')==='true'; });
+      if(idx<0) idx=0;
+      var next=idx;
+      if(e.key==='ArrowRight' || e.key==='ArrowDown') next=(idx+1)%TAB_NAMES.length;
+      else if(e.key==='ArrowLeft' || e.key==='ArrowUp') next=(idx-1+TAB_NAMES.length)%TAB_NAMES.length;
+      else if(e.key==='Home') next=0;
+      else if(e.key==='End') next=TAB_NAMES.length-1;
+      else return;
+      e.preventDefault();
+      focusAppTab(TAB_NAMES[next]);
+      $('tab'+TAB_NAMES[next]).focus();
+    });
+  }
 
   /* ---------- render ---------- */
   function totals(ev){
@@ -1078,6 +1145,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var l=item.l, i=item.i;
       var d=document.createElement('div');
       d.className='lot'+(l.price!=null?' sold':'')+(i===nextIdx?' next-up':'');
+      d.setAttribute('role','listitem');
       d.setAttribute('data-idx',i);
 
       var nextBadge=i===nextIdx?' <span class="badge">Next up</span>':'';
@@ -1093,17 +1161,17 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
         info+='</div>';
       }
       info+='<div class="lot-actions">';
-      info+='<button type="button" class="ghost sm" data-edit="'+i+'">Edit</button>';
+      info+='<button type="button" class="ghost sm" data-edit="'+i+'" aria-label="Edit lot '+l.n+'">Edit</button>';
       info+='<button type="button" class="ghost sm" data-up="'+i+'" '+(i===0?'disabled':'')+' aria-label="Move lot up">↑</button>';
       info+='<button type="button" class="ghost sm" data-down="'+i+'" '+(i===ev.lots.length-1?'disabled':'')+' aria-label="Move lot down">↓</button>';
-      if(l.price!=null) info+='<button type="button" class="ghost sm" data-addon="'+i+'">Add-on</button>';
-      info+='<button type="button" class="danger sm" data-rm="'+i+'">Remove</button>';
+      if(l.price!=null) info+='<button type="button" class="ghost sm" data-addon="'+i+'" aria-label="Add support payment to lot '+l.n+'">Add-on</button>';
+      info+='<button type="button" class="danger sm" data-rm="'+i+'" aria-label="Remove lot '+l.n+'">Remove</button>';
       info+='</div></div>';
 
       var right='';
       if(l.price!=null){
         right='<div class="sale"><div><div class="price">'+money(l.price)+'</div><small>'+esc(l.buyer||'No buyer name')+'</small></div>'+
-          '<button type="button" class="ghost sm" data-undo="'+i+'">Undo</button></div>';
+          '<button type="button" class="ghost sm" data-undo="'+i+'" aria-label="Undo sale on lot '+l.n+'">Undo</button></div>';
       } else {
         var opts='<option value="">— bidder # —</option>';
         (ev.buyers||[]).slice().sort(function(a,b){return a.num-b.num}).forEach(function(b){
@@ -1195,12 +1263,14 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       var d=buyerDue(ev,b);
       if(d.total>0 && !b.paid) unpaid.push({b:b,d:d});
     });
-    if(!unpaid.length) bal.innerHTML='<div class="empty">All registered buyers with a balance are marked paid.</div>';
-    else unpaid.forEach(function(x){
-      var row=document.createElement('div'); row.className='buyer-row';
-      row.innerHTML='<div class="bn">'+esc(String(x.b.num))+'</div><div><strong>'+esc(x.b.name)+'</strong><br><small>Balance '+money(x.d.total)+' · Unpaid</small></div><div></div>';
-      bal.appendChild(row);
-    });
+    if(!unpaid.length){
+      bal.innerHTML='<div class="empty">All registered buyers with a balance are marked paid.</div>';
+    } else {
+      var rows=unpaid.map(function(x){
+        return '<tr><th scope="row">'+esc(String(x.b.num))+'</th><td>'+esc(x.b.name)+'</td><td>'+money(x.d.total)+'</td><td><span class="unpaid">Unpaid</span></td></tr>';
+      }).join('');
+      bal.innerHTML='<table class="data-table"><caption class="sr-only">Outstanding buyer balances</caption><thead><tr><th scope="col">Bidder #</th><th scope="col">Name</th><th scope="col">Balance</th><th scope="col">Status</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    }
     save();
   }
 
@@ -1634,9 +1704,14 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     var login=which==='login';
     $('authTabLogin').setAttribute('aria-selected', login?'true':'false');
     $('authTabSignup').setAttribute('aria-selected', login?'false':'true');
-    $('loginForm').classList.toggle('hidden', !login);
-    $('signupForm').classList.toggle('hidden', login);
-    $('acceptForm').classList.add('hidden');
+    $('authTabLogin').tabIndex=login?0:-1;
+    $('authTabSignup').tabIndex=login?-1:0;
+    $('loginPanel').classList.toggle('hidden', !login);
+    $('loginPanel').hidden=!login;
+    $('signupPanel').classList.toggle('hidden', login);
+    $('signupPanel').hidden=login;
+    $('acceptPanel').classList.add('hidden');
+    $('acceptPanel').hidden=true;
     $('authTabs').classList.remove('hidden');
     setAuthError('');
   }
@@ -1654,9 +1729,9 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       $('inviteOrgShow').textContent=info.orgName;
       $('inviteEmailShow').textContent=info.email;
       $('authTabs').classList.add('hidden');
-      $('loginForm').classList.add('hidden');
-      $('signupForm').classList.add('hidden');
-      $('acceptForm').classList.remove('hidden');
+      $('loginPanel').classList.add('hidden'); $('loginPanel').hidden=true;
+      $('signupPanel').classList.add('hidden'); $('signupPanel').hidden=true;
+      $('acceptPanel').classList.remove('hidden'); $('acceptPanel').hidden=false;
       setAuthError('');
     }catch(e){
       setAuthError(e.message||'This invite is invalid or expired.');
@@ -1796,7 +1871,13 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       box.appendChild(row);
     });
   }
+  function closePeopleDlg(){
+    $('peopleDlg').classList.add('hidden');
+    if(peopleLastFocus && peopleLastFocus.focus) try{ peopleLastFocus.focus(); }catch(ignore){}
+    peopleLastFocus=null;
+  }
   $('peopleBtn').onclick=async function(){
+    peopleLastFocus=document.activeElement;
     peopleMsg('', false);
     $('inviteUrlWrap').classList.add('hidden');
     var owner=sessionUser.role==='owner';
@@ -1810,9 +1891,22 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     $('peopleDlg').classList.remove('hidden');
     try{ await refreshPeople(); }
     catch(e){ peopleMsg(e.message||'Could not load people.', true); }
+    setTimeout(function(){ $('peopleClose').focus(); }, 30);
   };
-  $('peopleClose').onclick=function(){ $('peopleDlg').classList.add('hidden'); };
-  $('peopleDlg').addEventListener('click', function(e){ if(e.target===$('peopleDlg')) $('peopleDlg').classList.add('hidden'); });
+  $('peopleClose').onclick=closePeopleDlg;
+  $('peopleDlg').addEventListener('click', function(e){ if(e.target===$('peopleDlg')) closePeopleDlg(); });
+  $('peopleDlg').addEventListener('keydown', function(e){
+    if(e.key==='Escape'){ e.preventDefault(); closePeopleDlg(); }
+    if(e.key==='Tab' && !$('peopleDlg').classList.contains('hidden')){
+      var pane=$('peopleDlg').querySelector('.dlg');
+      var nodes=pane.querySelectorAll('button,input,textarea,select,[href]');
+      var list=Array.prototype.filter.call(nodes,function(el){return !el.disabled && el.offsetParent!==null;});
+      if(!list.length) return;
+      var first=list[0], last=list[list.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+  });
   $('orgNameForm').onsubmit=async function(e){
     e.preventDefault();
     try{
