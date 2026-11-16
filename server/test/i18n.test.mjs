@@ -29,6 +29,11 @@ test('locale bundle and home page wiring', () => {
   assert.match(i18n, /BarnyardI18n/);
   assert.match(i18n, /'auth.signIn'/);
   assert.match(i18n, /'auth.signIn': 'Iniciar sesión'/);
+  assert.match(i18n, /translateApiError/);
+  assert.match(i18n, /'dlg\.newEvent\.title'/);
+  assert.match(html, /function localizeErr/);
+  assert.match(html, /t\('dlg\.newEvent\.title'\)/);
+  assert.match(html, /t\('empty\.noLots'\)/);
 });
 
 test('spanish legal pages are public', async () => {
