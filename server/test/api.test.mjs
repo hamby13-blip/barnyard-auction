@@ -80,6 +80,17 @@ describe('api', { concurrency: false }, () => {
     assert.equal(res.data.ok, true);
   });
 
+  test('HEAD requests for static pages return 200 without a body', async () => {
+    for (const path of ['/', '/privacy', '/terms', '/privacidad', '/merge.js', '/i18n.js']) {
+      const head = await fetch(app.url + path, { method: 'HEAD' });
+      assert.equal(head.status, 200, path);
+      const text = await head.text();
+      assert.equal(text, '', path);
+      const get = await fetch(app.url + path);
+      assert.equal(get.status, 200, path);
+    }
+  });
+
   test('privacy and terms pages are public', async () => {
     const privacy = await fetch(app.url + '/privacy');
     assert.equal(privacy.status, 200);

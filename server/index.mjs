@@ -541,7 +541,7 @@ async function handleApi(req, res, pool, pathname) {
   throw httpError(404, 'Not found.');
 }
 
-function sendFile(res, filePath, contentType) {
+function sendFile(res, req, filePath, contentType) {
   let body;
   try {
     body = fs.readFileSync(filePath);
@@ -553,11 +553,17 @@ function sendFile(res, filePath, contentType) {
     }
     throw err;
   }
+  const headOnly = (req.method || 'GET') === 'HEAD';
   res.writeHead(200, {
     'Content-Type': contentType,
     'Cache-Control': 'no-cache',
-    ...htmlSecurityHeaders()
+    ...htmlSecurityHeaders(),
+    ...(headOnly ? { 'Content-Length': String(body.length) } : {})
   });
+  if (headOnly) {
+    res.end();
+    return;
+  }
   res.end(body);
 }
 
@@ -572,36 +578,36 @@ export function createHandler(pool) {
         send(res, 200, { ok: true });
         return;
       }
-      if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
-        sendFile(res, indexPath, 'text/html; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && (pathname === '/' || pathname === '/index.html')) {
+        sendFile(res, req, indexPath, 'text/html; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/merge.js') {
-        sendFile(res, mergePath, 'text/javascript; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/merge.js') {
+        sendFile(res, req, mergePath, 'text/javascript; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/i18n.js') {
-        sendFile(res, i18nPath, 'text/javascript; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/i18n.js') {
+        sendFile(res, req, i18nPath, 'text/javascript; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/legal.css') {
-        sendFile(res, legalCssPath, 'text/css; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/legal.css') {
+        sendFile(res, req, legalCssPath, 'text/css; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/privacy') {
-        sendFile(res, privacyPath, 'text/html; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/privacy') {
+        sendFile(res, req, privacyPath, 'text/html; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/terms') {
-        sendFile(res, termsPath, 'text/html; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/terms') {
+        sendFile(res, req, termsPath, 'text/html; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/privacidad') {
-        sendFile(res, privacyEsPath, 'text/html; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/privacidad') {
+        sendFile(res, req, privacyEsPath, 'text/html; charset=utf-8');
         return;
       }
-      if (req.method === 'GET' && pathname === '/terminos') {
-        sendFile(res, termsEsPath, 'text/html; charset=utf-8');
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/terminos') {
+        sendFile(res, req, termsEsPath, 'text/html; charset=utf-8');
         return;
       }
       if (pathname.startsWith('/api/')) {
