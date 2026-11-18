@@ -14,6 +14,10 @@ const REQUIRED_STATIC_FILES = [
   'public/merge.js',
   'public/legal.css',
   'public/i18n.js',
+  'public/sw.js',
+  'public/manifest.webmanifest',
+  'public/icon-192.png',
+  'public/icon-512.png',
   'privacidad.html',
   'terminos.html'
 ];

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F3F8C">
+<link rel="manifest" href="/manifest.webmanifest">
 <title>Barnyard Auction</title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -654,9 +656,18 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     var el=$('syncState'); if(!el) return;
     el.classList.remove('ok','wait','bad');
     if(mode==='saving'){ el.textContent=t('sync.saving'); el.classList.add('wait'); }
+    else if(mode==='pending'){ el.textContent=t('sync.pending'); el.classList.add('wait'); }
     else if(mode==='offline'){ el.textContent=t('sync.offline'); el.classList.add('bad'); }
     else if(mode==='error'){ el.textContent=t('sync.error'); el.classList.add('bad'); }
     else { el.textContent=t('sync.saved'); el.classList.add('ok'); }
+  }
+  function offlineSyncMode(){
+    if(typeof navigator!=='undefined' && navigator.onLine===false) return hasDirty()?'pending':'offline';
+    return null;
+  }
+  function applyOfflineSyncPill(){
+    var mode=offlineSyncMode();
+    if(mode) setSync(mode);
   }
   function hasDirty(){
     var ids=Object.keys(syncGen);
@@ -666,7 +677,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   function scheduleSync(ms){
     if(!sessionUser||booting) return;
     clearTimeout(syncTimer);
-    if(typeof navigator!=='undefined' && navigator.onLine===false) setSync('offline');
+    if(offlineSyncMode()) setSync(offlineSyncMode());
     else if(hasDirty()) setSync('saving');
     syncTimer=setTimeout(function(){ flushSync(); }, ms==null?400:ms);
   }
@@ -827,7 +838,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       return;
     }
     if(navigator.onLine===false){
-      setSync('offline');
+      setSync(hasDirty()?'pending':'offline');
       scheduleSync(Math.min(retryDelay, 5000));
       return;
     }
@@ -851,7 +862,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
       else setSync('saved');
     }catch(e){
       if(e.status===401){ forceSignedOut(); return; }
-      setSync(e.offline||navigator.onLine===false?'offline':'error');
+      setSync(e.offline||navigator.onLine===false?(hasDirty()?'pending':'offline'):'error');
       scheduleSync(retryDelay);
       retryDelay=Math.min(15000, retryDelay*2);
     }finally{
@@ -1814,7 +1825,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     startLoops();
     refreshImportButton();
     if(offline){
-      setSync('offline');
+      applyOfflineSyncPill();
       if(!S.events.length){ S=seed(); linkBuyers(S); pickCurrent(); render(); }
       booting=false;
       return;
@@ -2007,7 +2018,7 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
     setTimeout(function(){ if(pendingRender && !userIsEditing()) safeRender(); }, 60);
   });
   window.addEventListener('online', function(){ retryDelay=1000; if(sessionUser) flushSync({pull:true}); });
-  window.addEventListener('offline', function(){ if(sessionUser) setSync('offline'); });
+  window.addEventListener('offline', function(){ if(sessionUser) applyOfflineSyncPill(); });
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState==='visible' && sessionUser) flushSync({pull:true});
   });
@@ -2060,6 +2071,9 @@ header.board .syncpill.bad{color:#ffd0c8;border-color:#e7a396}
   I18N.applyDocument();
   bindLang();
   applyTheme();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(function(){});
+  }
   boot();
 })();
 </script>

@@ -25,6 +25,10 @@ const termsEsPath = path.join(rootDir, 'terminos.html');
 const i18nPath = path.join(rootDir, 'public', 'i18n.js');
 const mergePath = path.join(rootDir, 'public', 'merge.js');
 const legalCssPath = path.join(rootDir, 'public', 'legal.css');
+const swPath = path.join(rootDir, 'public', 'sw.js');
+const manifestPath = path.join(rootDir, 'public', 'manifest.webmanifest');
+const icon192Path = path.join(rootDir, 'public', 'icon-192.png');
+const icon512Path = path.join(rootDir, 'public', 'icon-512.png');
 // Legal page HTML is an operator draft — have counsel review before public launch.
 const SALE_ID = /^[A-Za-z0-9_-]{1,80}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -592,6 +596,22 @@ export function createHandler(pool) {
       }
       if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/legal.css') {
         sendFile(res, req, legalCssPath, 'text/css; charset=utf-8');
+        return;
+      }
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/sw.js') {
+        sendFile(res, req, swPath, 'text/javascript; charset=utf-8');
+        return;
+      }
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/manifest.webmanifest') {
+        sendFile(res, req, manifestPath, 'application/manifest+json; charset=utf-8');
+        return;
+      }
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/icon-192.png') {
+        sendFile(res, req, icon192Path, 'image/png');
+        return;
+      }
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/icon-512.png') {
+        sendFile(res, req, icon512Path, 'image/png');
         return;
       }
       if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/privacy') {
