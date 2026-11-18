@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server/index.mjs",
-    "test": "node --test server/test/*.test.mjs",
+    "test": "node --test --test-concurrency=1 server/test/*.test.mjs",
     "test:e2e": "node test-sale.mjs"
   },
   "dependencies": {
