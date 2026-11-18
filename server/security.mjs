@@ -39,6 +39,10 @@ export function invitePreviewRateLimit() {
   return process.env.NODE_ENV === 'test' ? 10000 : 60;
 }
 
+export function demoAccessRateLimit() {
+  return process.env.NODE_ENV === 'test' ? 10000 : 15;
+}
+
 const AUTH_WINDOW_MS = 10 * 60 * 1000;
 const WRITE_WINDOW_MS = 60 * 1000;
 const INVITE_WINDOW_MS = 10 * 60 * 1000;
@@ -53,6 +57,10 @@ export function rateLimitWrite(req) {
 
 export function rateLimitInvitePreview(req) {
   rateLimit(`invite:${clientIp(req)}`, invitePreviewRateLimit(), INVITE_WINDOW_MS);
+}
+
+export function rateLimitDemoAccess(req) {
+  rateLimit(`demo:${clientIp(req)}`, demoAccessRateLimit(), AUTH_WINDOW_MS);
 }
 
 function normalizeHost(host) {

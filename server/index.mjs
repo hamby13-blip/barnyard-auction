@@ -5,12 +5,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cookieHeader, hashPassword, hashToken, newToken, readSignedToken, sessionSecret, signToken, verifyPassword } from './auth.mjs';
 import { connectWithRetry, migrate, resetData } from './db.mjs';
 import { cleanEvent } from './sale-data.mjs';
+import { DEMO_USER_ID, demoAccessEnabled, ensureDemoOrg, verifyDemoAccessCode } from './demo.mjs';
 import {
   baseSecurityHeaders,
   htmlSecurityHeaders,
   logServerError,
   rateLimitAuth,
   rateLimitInvitePreview,
+  rateLimitDemoAccess,
   rateLimitWrite,
   requireMutatingRequest,
   resetRateLimits
@@ -22,6 +24,7 @@ const privacyPath = path.join(rootDir, 'privacy.html');
 const termsPath = path.join(rootDir, 'terms.html');
 const privacyEsPath = path.join(rootDir, 'privacidad.html');
 const termsEsPath = path.join(rootDir, 'terminos.html');
+const accessPath = path.join(rootDir, 'access.html');
 const i18nPath = path.join(rootDir, 'public', 'i18n.js');
 const mergePath = path.join(rootDir, 'public', 'merge.js');
 const legalCssPath = path.join(rootDir, 'public', 'legal.css');
@@ -333,6 +336,23 @@ async function handleApi(req, res, pool, pathname) {
     return;
   }
 
+  if (method === 'GET' && pathname === '/api/access/status') {
+    send(res, 200, { enabled: demoAccessEnabled() });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/demo') {
+    rateLimitDemoAccess(req);
+    if (!demoAccessEnabled()) throw httpError(404, 'Demo is not available.');
+    const body = await readBody(req);
+    if (!verifyDemoAccessCode(body.code)) throw httpError(401, 'Access code is incorrect.');
+    await ensureDemoOrg(pool);
+    const row = await userById(pool, DEMO_USER_ID);
+    const cookie = await startSession(pool, row.id);
+    send(res, 200, { user: publicUser(row) }, { 'Set-Cookie': cookie });
+    return;
+  }
+
   if (method === 'POST' && pathname === '/api/auth/login') {
     rateLimitAuth(req);
     const body = await readBody(req);
@@ -608,6 +628,10 @@ export function createHandler(pool) {
       }
       if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/terminos') {
         sendFile(res, req, termsEsPath, 'text/html; charset=utf-8');
+        return;
+      }
+      if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/access') {
+        sendFile(res, req, accessPath, 'text/html; charset=utf-8');
         return;
       }
       if (pathname.startsWith('/api/')) {

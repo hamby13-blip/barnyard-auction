@@ -5,6 +5,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server ./server
 COPY public ./public
-COPY index.html privacy.html terms.html privacidad.html terminos.html ./
+COPY index.html access.html privacy.html terms.html privacidad.html terminos.html ./
 EXPOSE 8080
 CMD ["node", "server/index.mjs"]
