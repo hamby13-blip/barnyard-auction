@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0F3F8C">
+<title>Demo access — Barnyard Auction</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="/legal.css" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F8FC;color:#3E4A5A;font:400 16px/1.5 Archivo,system-ui,sans-serif}
+.wrap{max-width:420px;margin:48px auto;padding:16px}
+.card{background:#fff;border:1px solid #E4ECF5;border-radius:14px;padding:24px}
+h1{margin:0 0 8px;font-size:1.4rem}
+p{margin:0 0 16px;color:#4A5562}
+label{display:block;margin-bottom:14px}
+label span{display:block;margin-bottom:6px;font-weight:600}
+input{width:100%;padding:10px;border:1px solid #E4ECF5;border-radius:8px;font:inherit}
+button{padding:10px 16px;border:0;border-radius:8px;background:#f2c230;font:inherit;font-weight:600;cursor:pointer;width:100%}
+.err{color:#b5372b;margin:12px 0 0;min-height:1.2em}
+.off{display:none}
+a{color:#0F3F8C}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="enabledPanel">
+    <h1>Try the demo</h1>
+    <p>Enter the access code you were given to open a shared demo fair with sample sale data. Changes stay in the demo organization only.</p>
+    <form id="accessForm">
+      <label>
+        <span>Access code</span>
+        <input name="code" type="password" autocomplete="off" required minlength="8">
+      </label>
+      <button type="submit">Open demo</button>
+    </form>
+    <p class="err" id="accessErr" role="alert"></p>
+    <p style="margin-top:18px;font-size:.9rem"><a href="/">Back to sign in</a></p>
+  </div>
+  <div class="card off" id="disabledPanel">
+    <h1>Demo not available</h1>
+    <p>Demo access is turned off on this deployment.</p>
+    <p><a href="/">Back to sign in</a></p>
+  </div>
+</div>
+<script>
+(function(){
+  var form=document.getElementById('accessForm');
+  var err=document.getElementById('accessErr');
+  fetch('/api/access/status',{headers:{'X-Barnyard':'1'}}).then(function(r){return r.json()}).then(function(data){
+    if(!data.enabled){
+      document.getElementById('enabledPanel').classList.add('off');
+      document.getElementById('disabledPanel').classList.remove('off');
+    }
+  }).catch(function(){});
+  form.onsubmit=async function(e){
+    e.preventDefault();
+    err.textContent='';
+    var btn=form.querySelector('button[type=submit]');
+    btn.disabled=true;
+    try{
+      var res=await fetch('/api/auth/demo',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Barnyard':'1'},
+        credentials:'same-origin',
+        body:JSON.stringify({code:form.code.value})
+      });
+      var data={};
+      try{data=await res.json();}catch(ignore){}
+      if(!res.ok){ err.textContent=data.error||'Could not open demo.'; return; }
+      location.href='/';
+    }catch(ex){ err.textContent='Could not reach the server.'; }
+    finally{ btn.disabled=false; }
+  };
+})();
+</script>
+</body>
+</html>

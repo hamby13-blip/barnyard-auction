@@ -9,6 +9,7 @@ const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 /** Root-level HTML and public assets the server must read at runtime (including Docker). */
 const REQUIRED_STATIC_FILES = [
   'index.html',
+  'access.html',
   'privacy.html',
   'terms.html',
   'public/merge.js',
